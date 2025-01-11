@@ -1,1 +1,150 @@
-#AI Prompt Builder
+# AI Prompt Builder
+
+Welcome to the **AI Prompt Builder**! This project allows you to create, test, and manage AI prompts easily. It includes a user interface where you can filter, sort, and interact with different prompts while also leveraging AI responses. 
+
+The project uses **Hugging Face's** API with the `"mistralai/Mistral-7B-Instruct-v0.3"` model for generating AI responses. Future versions of the project will include access to paid models such as **GPT-4** for more advanced interactions.
+
+### Features
+
+- **Category Filtering**: Users can filter prompts by category, with dynamic category suggestions as they type.
+- **Sorting**: Prompts can be sorted by title in either ascending or descending order.
+- **Test Prompts**: Select a prompt to generate AI responses using a template.
+- **Pagination/Infinite Scrolling**: Fetch prompts dynamically as the user scrolls, loading more as needed.
+- **Error Handling**: Proper error handling for fetch operations, showing loading states and error messages when needed.
+
+---
+
+## Prerequisites
+
+Before starting with the project, ensure you have the following installed:
+
+- **Node.js**: Required for running the React development server and backend API.
+- **npm or yarn**: For managing dependencies and running scripts.
+
+### Backend Requirements
+
+This project relies on a backend API to serve prompts and handle AI responses. Ensure the backend is running and accessible via `http://localhost:5000/api`.
+
+---
+
+## Installation
+
+### Frontend Setup
+
+1. Clone this repository to your local machine:
+
+   ```bash
+   git clone https://github.com/your-repository/ai-prompt-builder.git
+   cd ai-prompt-builder
+   ```
+
+2. Install the necessary dependencies:
+
+   ```bash
+   npm install
+   ```
+
+3. Start the development server:
+
+   ```bash
+   npm start
+   ```
+
+   This will start the React app at `http://localhost:3000`.
+
+### Backend Setup
+
+The backend API should be running on `http://localhost:5000`. If you don't have it yet, follow these steps:
+
+1. Clone the backend repository (if separate).
+2. Install dependencies and start the server.
+    ```bash
+    nodemon server.js
+    ```
+
+---
+
+## Features in Detail
+
+### 1. **Category Filtering**
+Users can filter prompts by typing in a category field. The input field displays a dropdown of available categories based on the entered text. Upon selection, the prompt list is updated according to the chosen category.
+
+### 2. **Sorting by Title**
+Users can sort prompts alphabetically in either ascending or descending order. This is achieved using a dropdown with options to choose the sorting order.
+
+### 3. **Testing Prompts**
+When a user selects a prompt, an AI response is fetched using a POST request to the backend. The response is then displayed below the selected prompt. If there's an error, the error message is displayed.
+
+### 4. **Pagination/Infinite Scrolling**
+- The app dynamically loads prompts based on scrolling. 
+- When a user scrolls to the bottom of the list, additional prompts are loaded.
+- Pagination works by keeping track of the current page and checking if more data is available to load.
+
+### 5. **Hugging Face Integration**
+The app uses **Hugging Face's** API with the `"mistralai/Mistral-7B-Instruct-v0.3"` model for generating AI responses. This model provides high-quality, instruction-following capabilities to power prompt testing.
+
+---
+
+## Future Versions
+
+In future releases, the **AI Prompt Builder** project will include the following features:
+
+- **Prompt Social Sharing**: Users will be able to share their created prompts with others on social media platforms.
+- **User Authentication**: Implement user authentication allowing users to sign up, log in, and personalize their experience.
+- **Upvote and Downvote**: Users can upvote or downvote prompts, helping the community highlight the best and most useful prompts.
+- **Prompt Management**: Users will be able to save, edit, or delete their own prompts for better management.
+- **Paid Model Integration (GPT-4)**: Future versions will integrate access to paid AI models like **GPT-4** for more advanced capabilities.
+
+---
+
+## Contributing
+
+We welcome contributions to the project! If you would like to collaborate, please follow these steps:
+
+1. **Fork the repository**: Create your own copy of the project.
+2. **Clone your fork**: 
+
+   ```bash
+   git clone https://github.com/your-username/ai-prompt-builder.git
+   ```
+
+3. **Create a new branch**: 
+
+   ```bash
+   git checkout -b feature-branch
+   ```
+
+4. **Make changes**: Work on your feature, fix bugs, or improve the project as needed.
+5. **Commit your changes**: 
+
+   ```bash
+   git add .
+   git commit -m "Description of the changes"
+   ```
+
+6. **Push to your fork**: 
+
+   ```bash
+   git push origin feature-branch
+   ```
+
+7. **Create a Pull Request**: Once you're happy with your changes, submit a pull request to the main repository for review.
+
+---
+
+## License
+
+This project is open source and available under the [MIT License](LICENSE).
+
+---
+
+## Contact
+
+If you have any questions, feel free to reach out:
+
+- **Email**: dimoreranx008@gmail.com
+- **GitHub**: [modd3](https://github.com/modd3)
+
+---
+
+Thank you for your interest in collaborating! We look forward to your contributions!
