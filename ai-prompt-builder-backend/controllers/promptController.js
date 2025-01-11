@@ -5,8 +5,8 @@ const getPrompts = async (req, res) => {
     try {
         const { category, sort } = req.query; // Get query parameters
 
-        // Build the query object for filtering
-        const filter = category ? { category } : {};
+        // Build the query object for filtering based on category
+        const filter = category ? { category} : {}; // Ensure you're querying by category
 
         // Determine sorting order
         const sortOption = sort === 'asc' ? { title: 1 } : sort === 'desc' ? { title: -1 } : {};
@@ -20,12 +20,11 @@ const getPrompts = async (req, res) => {
     }
 };
 
-
 // Create a new prompt
 const createPrompt = async (req, res) => {
     try {
         const { title, template, category } = req.body;
-        const newPrompt = new Prompt({ title, template, category });
+        const newPrompt = new Prompt({ title, template, category});
         await newPrompt.save();
         res.status(201).json(newPrompt);
     } catch (err) {
@@ -47,14 +46,19 @@ const getPromptById = async (req, res) => {
     }
 };
 
+// Fetch unique categories for the filter dropdown
 const getPromptCateg = async (req, res) => {
   try {
-    const categories = await Prompt.distinct('category'); // Fetch unique categories
-    res.json(categories);
+      // Fetch unique categories and convert them to lowercase
+      const categories = await Prompt.distinct('category');
+      const lowercaseCategories = categories.map(category => category);
+      
+      res.status(200).json(lowercaseCategories); // Return lowercase categories
   } catch (error) {
-    res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error.message });
+      console.error(error)
   }
 };
+
   
-  module.exports = { getPrompts, createPrompt, getPromptById, getPromptCateg };
-  
+module.exports = { getPrompts, createPrompt, getPromptById, getPromptCateg };
