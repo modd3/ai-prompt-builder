@@ -87,6 +87,8 @@ const HomePage = () => {
         <h1 className="display-4">Welcome to AI Prompt Builder</h1>
         <p className="lead">Create and test your AI prompts with ease using our platform.</p>
       </header>
+      <br></br>
+      <br></br>
 
       {/* Filter and Sort Controls */}
       <div className="row mb-4">

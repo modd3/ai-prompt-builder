@@ -6,7 +6,7 @@ const getPrompts = async (req, res) => {
         const { category, sort } = req.query; // Get query parameters
 
         // Build the query object for filtering based on category
-        const filter = category ? { category: category.toLowercase() } : {}; // Ensure you're querying by category
+        const filter = category ? { category} : {}; // Ensure you're querying by category
 
         // Determine sorting order
         const sortOption = sort === 'asc' ? { title: 1 } : sort === 'desc' ? { title: -1 } : {};
@@ -24,7 +24,7 @@ const getPrompts = async (req, res) => {
 const createPrompt = async (req, res) => {
     try {
         const { title, template, category } = req.body;
-        const newPrompt = new Prompt({ title, template, category: category.toLowerCase()  });
+        const newPrompt = new Prompt({ title, template, category});
         await newPrompt.save();
         res.status(201).json(newPrompt);
     } catch (err) {
@@ -51,7 +51,7 @@ const getPromptCateg = async (req, res) => {
   try {
       // Fetch unique categories and convert them to lowercase
       const categories = await Prompt.distinct('category');
-      const lowercaseCategories = categories.map(category => category.toLowerCase());
+      const lowercaseCategories = categories.map(category => category);
       
       res.status(200).json(lowercaseCategories); // Return lowercase categories
   } catch (error) {
