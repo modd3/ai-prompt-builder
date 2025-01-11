@@ -45,7 +45,16 @@ const getPromptById = async (req, res) => {
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
-  };
+};
+
+const getPromptCateg = async (req, res) => {
+  try {
+    const categories = await Prompt.distinct('category'); // Fetch unique categories
+    res.json(categories);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
   
-  module.exports = { getPrompts, createPrompt, getPromptById };
+  module.exports = { getPrompts, createPrompt, getPromptById, getPromptCateg };
   

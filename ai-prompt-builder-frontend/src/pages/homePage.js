@@ -9,6 +9,7 @@ const HomePage = () => {
   const [activePrompt, setActivePrompt] = useState(null);
   const [response, setResponse] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -35,6 +36,7 @@ const HomePage = () => {
       setActivePrompt(id);
       setResponse('');
       setError('');
+      setLoading(true);
 
       // Fetch the specific prompt by ID
       const res = await axios.get(`http://localhost:5000/api/prompts/${id}`);
@@ -43,16 +45,19 @@ const HomePage = () => {
 
       if (!template) {
         setError('Prompt template is empty or undefined.');
+        setLoading(false);
         return;
       }
 
-      // Send a POST request to /test with the template as the request body
+      // Send a POST request to /hugface with the template as the request body
       const { data } = await axios.post('http://localhost:5000/api/hugface', { prompt: template });
 
       setResponse(data.response || 'No response received');
     } catch (error) {
       console.error('Error occurred during prompt testing:', error);
       setError(error.response?.data?.error || 'An error occurred while fetching the response');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -112,13 +117,14 @@ const HomePage = () => {
               {/* Conditional rendering for the active prompt */}
               {activePrompt === prompt._id && (
                 <div className="mt-2">
-                  {response && (
+                  {loading && <p className="text-secondary">Loading response...</p>}
+                  {!loading && response && (
                     <div>
-                      <h5 className='text-secondary'>AI Response:</h5>
+                      <h5 className="text-secondary">AI Response:</h5>
                       <p>{response}</p>
                     </div>
                   )}
-                  {error && <small className="text-danger">{error}</small>}
+                  {!loading && error && <small className="text-danger">{error}</small>}
                 </div>
               )}
             </li>
