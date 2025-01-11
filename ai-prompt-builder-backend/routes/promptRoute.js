@@ -4,7 +4,8 @@ const { getPrompts, createPrompt, getPromptById, getPromptCateg } = require('../
 
 router.get('/', getPrompts);
 router.post('/', createPrompt);
+router.get('/categories', getPromptCateg); //prompt categories
 router.get('/:id', getPromptById); // New route
-router.post('/categories', getPromptCateg); //prompt categories
+
 
 module.exports = router;

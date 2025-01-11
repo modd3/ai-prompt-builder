@@ -4,43 +4,55 @@ import axios from 'axios';
 
 const HomePage = () => {
   const [prompts, setPrompts] = useState([]);
-  const [category, setCategory] = useState('');
+  const [categories, setCategories] = useState([]); // State to hold categories
+  const [category, setCategory] = useState(''); // Category input field
   const [sort, setSort] = useState('');
   const [activePrompt, setActivePrompt] = useState(null);
   const [response, setResponse] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isDropdownVisible, setIsDropdownVisible] = useState(false); // Track if dropdown is visible
 
+  // Fetch categories from the backend on component mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await axios.get('http://localhost:5000/api/prompts/categories');
+        setCategories(res.data); // Set categories to state
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+
+    fetchCategories();
+  }, []); // Empty dependency array means it runs only on mount
+
+  // Fetch prompts with filters when category or sort changes
   useEffect(() => {
     const fetchData = async () => {
       try {
         const params = {};
-        if (category) params.category = category;
-        if (sort) params.sort = sort;
+        if (category) params.category = category; // Filter by category
+        if (sort) params.sort = sort; // Sort prompts by title
 
         const res = await fetchPrompts(params);
-        setPrompts(res.data);
+        setPrompts(res.data); // Update prompts based on selected category and sort
       } catch (error) {
         console.error('Error fetching prompts:', error);
       }
     };
 
     fetchData();
-  }, [category, sort]);
+  }, [category, sort]); // Dependencies: category and sort
 
   const handleTestPrompt = async (id) => {
     try {
-      console.log(`Fetching details for prompt ID: ${id}`);
-
-      // Reset state for new selection
       setActivePrompt(id);
       setResponse('');
       setError('');
       setLoading(true);
 
-      // Fetch the specific prompt by ID
       const res = await axios.get(`http://localhost:5000/api/prompts/${id}`);
-      console.log('Prompt details fetched:', res.data);
       const { template } = res.data;
 
       if (!template) {
@@ -49,16 +61,24 @@ const HomePage = () => {
         return;
       }
 
-      // Send a POST request to /hugface with the template as the request body
       const { data } = await axios.post('http://localhost:5000/api/hugface', { prompt: template });
 
       setResponse(data.response || 'No response received');
     } catch (error) {
-      console.error('Error occurred during prompt testing:', error);
       setError(error.response?.data?.error || 'An error occurred while fetching the response');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCategoryChange = (e) => {
+    setCategory(e.target.value);
+    setIsDropdownVisible(true); // Show the dropdown when user starts typing
+  };
+
+  const handleCategorySelect = (selectedCategory) => {
+    setCategory(selectedCategory); // Set the category based on selection
+    setIsDropdownVisible(false); // Hide the dropdown after selection
   };
 
   return (
@@ -79,10 +99,26 @@ const HomePage = () => {
             id="category"
             className="form-control"
             value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            placeholder="Enter category"
+            onClick={() => setIsDropdownVisible(true)} // Show dropdown when clicked
+            onChange={handleCategoryChange} // Handle input field change
+            placeholder="Enter or select category"
           />
+          {isDropdownVisible && (
+            <ul className="list-group mt-2" style={{ maxHeight: '150px', overflowY: 'auto' }}>
+              {(category ? categories.filter((cat) => cat.toLowerCase().includes(category.toLowerCase())) : categories)
+                .map((cat, index) => (
+                  <li
+                    key={index}
+                    className="list-group-item"
+                    onClick={() => handleCategorySelect(cat)} // Set category when clicked
+                  >
+                    {cat}
+                  </li>
+                ))}
+            </ul>
+          )}
         </div>
+
         <div className="col-md-6">
           <label htmlFor="sort" className="form-label">
             Sort by Title
@@ -91,7 +127,7 @@ const HomePage = () => {
             id="sort"
             className="form-select"
             value={sort}
-            onChange={(e) => setSort(e.target.value)}
+            onChange={(e) => setSort(e.target.value)} // Update sorting state
           >
             <option value="">None</option>
             <option value="asc">Ascending</option>
@@ -114,7 +150,6 @@ const HomePage = () => {
               <p className="mb-1">{prompt.template}</p>
               <small className="text-muted">Category: {prompt.category}</small>
 
-              {/* Conditional rendering for the active prompt */}
               {activePrompt === prompt._id && (
                 <div className="mt-2">
                   {loading && <p className="text-secondary">Loading response...</p>}
