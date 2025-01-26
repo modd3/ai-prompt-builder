@@ -59,6 +59,7 @@ The backend API should be running on `http://localhost:5000`. If you don't have 
 1. Clone the backend repository (if separate).
 2. Install dependencies and start the server.
     ```bash
+    npm install
     nodemon server.js
     ```
 
