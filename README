@@ -34,7 +34,7 @@ This project relies on a backend API to serve prompts and handle AI responses. E
 1. Clone this repository to your local machine:
 
    ```bash
-   git clone https://github.com/your-repository/ai-prompt-builder.git
+   git clone https://github.com/modd3/ai-prompt-builder.git
    cd ai-prompt-builder
    ```
 
