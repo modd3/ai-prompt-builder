@@ -10,10 +10,10 @@ const generateResponse = async (prompt) => {
             model: "mistralai/Mistral-7B-Instruct-v0.3", // Replace with your chosen model
             inputs: prompt,
             parameters: {
-                max_length: 100, // Limit the response length
-                temperature: 0.9, // Adjust creativity
+                max_new_tokens: 300, // Limit the response length
+                temperature: 0.7, // Adjust creativity
             },
-        });
+        }, );
         return response.generated_text;
     } catch (error) {
         console.error("Error interacting with Hugging Face:", error.message);

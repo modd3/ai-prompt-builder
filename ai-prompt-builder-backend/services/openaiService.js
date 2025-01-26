@@ -22,7 +22,7 @@ const generateResponse = async (prompt) => {
                 { role: 'user', content: prompt }, // User message
             ],
             max_tokens: 100, // Limit the response length
-            temperature: 0.7, // Adjust creativity (0.0 = conservative, 1.0 = creative)
+            temperature: 0.9, // Adjust creativity (0.0 = conservative, 1.0 = creative)
         });
         return response.choices[0].message.content.trim();
     } catch (error) {
