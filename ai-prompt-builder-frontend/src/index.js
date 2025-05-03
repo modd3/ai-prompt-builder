@@ -1,11 +1,13 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
-import 'bootstrap/dist/css/bootstrap.min.css';
-
 import "./styles.css"; // Optional, for global styles
 
-const root = ReactDOM.createRoot(document.getElementById("root"));
+// Get the root element from your HTML (usually index.html)
+const container = document.getElementById('root');
+const root = ReactDOM.createRoot(container); // Create a root
+
+// Render the App component into the root
 root.render(
   <React.StrictMode>
     <App />

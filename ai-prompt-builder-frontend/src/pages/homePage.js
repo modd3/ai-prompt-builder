@@ -4,57 +4,6 @@ export const Component = () => {
     return (
         <div id="webcrumbs">
             <div className="w-[1200px] p-6 bg-gradient-to-br from-white to-gray-50 font-sans">
-                <header className="flex justify-between items-center mb-8 border-b border-gray-200 pb-6">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-primary-600 text-white p-2 rounded-lg transform rotate-6 transition-transform hover:rotate-0">
-                            <span className="material-symbols-outlined text-2xl">psychology</span>
-                        </div>
-                        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-primary-800">
-                            PromptShare
-                        </h1>
-                    </div>
-                    <nav className="hidden md:flex items-center gap-6">
-                        <a href="#" className="font-medium hover:text-primary-600 transition-colors">
-                            Discover
-                        </a>
-                        <a href="#" className="font-medium hover:text-primary-600 transition-colors">
-                            Learn
-                        </a>
-                        <a href="#" className="font-medium hover:text-primary-600 transition-colors">
-                            Community
-                        </a>
-                        <a href="#" className="font-medium hover:text-primary-600 transition-colors">
-                            Pricing
-                        </a>
-                    </nav>
-                    <div className="flex items-center gap-4">
-                        <button className="hidden md:flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
-                            <span className="material-symbols-outlined">search</span>
-                            <span>Search</span>
-                        </button>
-                        <details className="relative group">
-                            <summary className="list-none flex items-center gap-2 cursor-pointer">
-                                <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                                    <span className="material-symbols-outlined">person</span>
-                                </div>
-                                <span className="material-symbols-outlined text-gray-500 group-hover:text-primary-600 transition-colors">
-                                    expand_more
-                                </span>
-                            </summary>
-                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg p-2 z-10">
-                                <a href="#" className="block px-4 py-2 rounded-md hover:bg-gray-100 transition-colors">
-                                    Profile
-                                </a>
-                                <a href="#" className="block px-4 py-2 rounded-md hover:bg-gray-100 transition-colors">
-                                    Settings
-                                </a>
-                                <a href="#" className="block px-4 py-2 rounded-md hover:bg-gray-100 transition-colors">
-                                    Logout
-                                </a>
-                            </div>
-                        </details>
-                    </div>
-                </header>
 
                 <main>
                     <section className="mb-12">
