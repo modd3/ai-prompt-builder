@@ -18,7 +18,7 @@ const getPrompts = async (req, res) => {
       const prompts = await Prompt.find(filter)
         .sort(sortOption)
         .skip(skip)
-        .limit(pageSize);
+        //.limit(pageSize);
   
       // Count total documents for pagination info
       const total = await Prompt.countDocuments(filter);
@@ -66,8 +66,8 @@ const getPromptCateg = async (req, res) => {
   try {
       // Fetch unique categories and convert them to lowercase
       const categories = await Prompt.distinct('category');
-      
-      res.status(200).json(categories); // Return lowercase categories
+      lower_categories = categories.map((item) => item.toLowerCase());
+      res.status(200).json(lower_categories); // Return lowercase categories
   } catch (error) {
       res.status(500).json({ error: error.message });
       console.error(error)
