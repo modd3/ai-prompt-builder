@@ -4,6 +4,8 @@ import Navbar from "./components/navbar";
 import HomePage from "./pages/homePage";
 import CreatePromptPage from "./pages/createPromptPage";
 import TestPromptPage from "./pages/testPromptPage";
+import './styles.css';
+
 
 const App = () => (
   <Router>

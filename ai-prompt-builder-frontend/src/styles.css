@@ -1,0 +1,39 @@
+.action-icons {
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+  }
+  
+  .list-group-item:hover .action-icons {
+    opacity: 1;
+    cursor:pointer;
+  }
+  
+  .form-control {
+    border-radius: 0.5rem;
+    border: 1px solid #ddd;
+    padding: 0.5rem;
+  }
+  
+  textarea.form-control {
+    resize: none;
+  }
+  
+  .bg-dark-form {
+    background-color: #343a40;  /* Dark background color */
+    color: #fff;                /* Light text color */
+    padding: 20px;              /* Add some padding for spacing */
+    border-radius: 5px;         /* Optional: rounded corners for a smoother look */
+  }
+  
+  .bg-dark-form input,
+  .bg-dark-form textarea {
+    background-color: #495057;  /* Slightly lighter dark background for input fields */
+    color: #fff;                /* Text color */
+    border: 1px solid #ced4da;  /* Light border for the input fields */
+  }
+  
+  .bg-dark-form button {
+    background-color: #007bff; /* Blue button background */
+    color: white;              /* White text for buttons */
+  }
+  
