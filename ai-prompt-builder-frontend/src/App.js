@@ -1,7 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/navbar";
-import HomePage from "./pages/homePage";
+import { Component } from "./pages/homePage";
 import CreatePromptPage from "./pages/createPromptPage";
 import TestPromptPage from "./pages/testPromptPage";
 import './styles.css';
@@ -10,9 +10,9 @@ import './styles.css';
 const App = () => (
   <Router>
     <Navbar />
-    <div className="container my-5"> {/* Bootstrap container for proper spacing */}
+    <div className="container"> 
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<Component />} />
         <Route path="/create" element={<CreatePromptPage />} />
         <Route path="/test" element={<TestPromptPage />} />
       </Routes>
