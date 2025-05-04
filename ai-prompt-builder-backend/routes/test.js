@@ -5,7 +5,8 @@ require('dotenv').config({ path: '../.env' }); // Load environment variables fro
 // Import LLM libraries
 const { OpenAI } = require('openai'); // For ChatGPT integration
 const { HfInference } = require('@huggingface/inference'); // For Hugging Face integration
-// const Anthropic = require('@anthropic-ai/sdk'); // For Claude (uncomment if integrating)
+const Anthropic = require('@anthropic-ai/sdk'); // For Claude integration (uncomment if integrating)
+const { GoogleGenerativeAI } = require('@google/generative-ai'); // For Gemini integration (uncomment if integrating)
 
 
 // Initialize LLM clients (outside the route handler for efficiency)
@@ -20,7 +21,11 @@ const openai = new OpenAI({
 const hf = new HfInference(process.env.HUGGINGFACE_TOKEN);
 
 // Anthropic Client (uncomment if integrating Claude)
-// const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+// Google Generative AI Client (uncomment if integrating Gemini)
+// Uncomment the following lines to initialize the Gemini client
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 
 // @route   POST /api/test-prompt
@@ -61,21 +66,29 @@ router.post('/', async (req, res) => {
 
           case 'Gemini':
               // Example integration with Google AI API (replace with your actual logic)
-              /*
+              // Ensure Gemini API key is configured
               if (!process.env.GEMINI_API_KEY) {
                    throw new Error("Gemini API key not configured in environment variables.");
                }
-              const model = genAI.getGenerativeModel({ model: "gemini-pro" }); // Specify model
-              const result = await model.generateContent(promptContent); // Integrate variables if needed
+              // Use the specified Gemini model
+              const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro-exp-03-25" }); // Changed model name here
+
+              // Define generation configuration, including max output tokens
+              const generationConfig = {
+                maxOutputTokens: 300, // Set the maximum number of output tokens here
+                // You can add other parameters like temperature, topP, topK here if needed
+                temperature: 0.9,
+                // topP: 1,
+                // topK: 1,
+              };
+
+              const result = await model.generateContent(promptContent, generationConfig); // Pass the generationConfig
               const response = result.response;
               modelResponse = response.text();
-              */
-              modelResponse = "Gemini integration pending. Configure Google AI API."; // Placeholder response
               break;
 
           case 'Claude':
               // Example integration with Anthropic API (replace with your actual logic)
-              /*
               if (!process.env.ANTHROPIC_API_KEY) {
                    throw new Error("Anthropic API key not configured in environment variables.");
                }
@@ -85,8 +98,6 @@ router.post('/', async (req, res) => {
                   model: "claude-3-opus-20240229", // Specify model
               });
               modelResponse = message.content[0].text;
-              */
-              modelResponse = "Claude integration pending. Configure Anthropic API."; // Placeholder response
               break;
 
           case 'HuggingFace': // Assuming 'HuggingFace' or a specific model name like 'Mistral-7B' is passed
@@ -99,7 +110,7 @@ router.post('/', async (req, res) => {
                   model: "mistralai/Mistral-7B-Instruct-v0.3", // Using the model from the provided snippet
                   inputs: promptContent, // User's prompt content
                   parameters: {
-                      max_new_tokens: 300, // Limit the response length as per snippet
+                      max_new_tokens: 500, // Limit the response length as per snippet
                       temperature: 0.7, // Adjust creativity as per snippet
                   },
               });

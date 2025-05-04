@@ -28,11 +28,13 @@ const PromptSchema = new mongoose.Schema({
     default: false, // Prompts are private by default
   },
   // If implementing user authentication, uncomment and use the 'ref' to the User model
-  // author: {
-  //   type: mongoose.Schema.Types.ObjectId,
-  //   ref: 'User',
-  //   required: true // Make author required if users must be logged in to create
-  // },
+  author: {
+     type: mongoose.Schema.Types.ObjectId,
+     ref: 'User',
+     required: true // Make author required if users must be logged in to create
+   },
+   
+  // Optional: If you want to track the number of times a prompt has been tested
   created_at: {
     type: Date,
     default: Date.now, // Set the creation date to the current date/time by default
