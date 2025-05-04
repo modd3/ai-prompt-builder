@@ -8,15 +8,13 @@ const Navbar = () => {
     <header className="w-full bg-gradient-to-br from-white to-gray-50 font-sans border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
         {/* Brand */}
-        <div className="flex items-center gap-3">
-          <div className="bg-primary-600 text-white p-2 rounded-lg transform rotate-6 transition-transform hover:rotate-0">
-            <span className="material-symbols-outlined text-2xl">psychology</span>
+        <a href="/">
+        <div className="flex items-center gap-2"> {/* Removed mb-4 */}
+          <div className="bg-primary-600 p-1 rounded-md">
+            <span className="material-symbols-outlined">psychology</span>
           </div>
-          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-primary-800">
-            AI Prompt Builder
-          </h1>
-        </div>
-
+            <span className="font-bold text-xl">PromptShare</span>
+        </div> </a>
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6">
           <Link to="/" className="font-medium hover:text-primary-600 transition-colors">Home</Link>

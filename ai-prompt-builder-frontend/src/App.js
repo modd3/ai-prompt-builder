@@ -1,9 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/navbar";
-import { Component } from "./pages/homePage";
-import CreatePromptPage from "./pages/createPromptPage";
-import TestPromptPage from "./pages/testPromptPage";
+import HomePage  from "./pages/HomePage";
 import './styles.css';
 
 
@@ -12,9 +10,7 @@ const App = () => (
     <Navbar />
     <div className="container"> 
       <Routes>
-        <Route path="/" element={<Component />} />
-        <Route path="/create" element={<CreatePromptPage />} />
-        <Route path="/test" element={<TestPromptPage />} />
+        <Route path="/" element={<HomePage />} />
       </Routes>
     </div>
   </Router>
