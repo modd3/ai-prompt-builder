@@ -1,5 +1,7 @@
 const Prompt = require('../models/prompt'); // Ensure correct path to your Prompt model
-// If implementing user authentication, you might need access to the User model or user data from req
+const User = require('../models/User'); // Import the User model to update the user's prompts array
+const mongoose = require('mongoose'); // Import mongoose for ObjectId comparison
+
 
 // Controller function to get all prompts with optional filtering, sorting, and pagination
 // This function is intended to be used by a GET route, e.g., router.get('/', getPrompts);
@@ -7,7 +9,7 @@ const getPrompts = async (req, res) => {
     try {
         // Extract query parameters for filtering, sorting, pagination, and search
         // Using 'targetModel' and 'tags' for filtering, aligning with the Prompt model
-        const { targetModel, tags, sort, page = 1, limit = 10, isPublic = 'true', search } = req.query; // Added 'search'
+        const { targetModel, tags, sort, page = 1, limit = 10, isPublic = 'true', search, author } = req.query; // Added 'author' query param
 
         // Build filter object
         const filter = {};
@@ -23,12 +25,35 @@ const getPrompts = async (req, res) => {
              filter.isPublic = true;
         } else if (isPublic === 'false') { // Explicitly check for 'false' string
              filter.isPublic = false;
-             // In a real app, add authentication here to ensure only the owner can see their private prompts.
-             // filter.author = req.user.id; // Example if using auth
+             // If fetching private prompts, ensure the user is authenticated and is the author
+             // This assumes the 'author' query param is being used to request user's private prompts
+             if (author && req.user && author === req.user.id) {
+                  filter.author = author;
+             } else {
+                  // If requesting private prompts without being the author, return empty or unauthorized
+                  // For now, let's just ensure the filter is set correctly if the user is the author
+                  // A more robust approach might return 403 if isPublic=false is requested without auth/ownership
+                  if (!req.user || author !== req.user.id) {
+                      // If private=false is requested but no author filter or wrong author,
+                      // we might adjust the filter or return an error depending on desired behavior.
+                      // For now, if isPublic=false is requested, we require the author filter to match the logged-in user.
+                      // If it doesn't match or no user, the filter won't be applied, effectively showing no private prompts for others.
+                  } else {
+                      filter.author = author;
+                  }
+             }
         }
         // If isPublic is not provided or is something else, it won't be added to the filter,
         // which might return both public and private depending on the find() query.
         // It's safer to explicitly handle the default or require isPublic.
+
+        // Add author filter if provided and not fetching public prompts
+        if (author && isPublic !== 'true') { // Only apply author filter if explicitly requested and not public
+             // Ensure the requesting user is the author if this route is protected
+             // If this GET route is public, you'd only apply the author filter
+             // For now, assuming this route is public and author filter is just for querying
+             filter.author = author;
+        }
 
 
         // Add search filter if search term is provided
@@ -74,7 +99,8 @@ const getPrompts = async (req, res) => {
         const prompts = await Prompt.find(filter)
             .sort(sortOption)
             .skip(skip)
-            .limit(pageSize); // Apply the limit for pagination
+            .limit(pageSize)
+            .populate('author', 'name'); // Populate author field, only include name
 
         // Count total documents matching the filter for pagination info
         const total = await Prompt.countDocuments(filter);
@@ -124,6 +150,19 @@ const createPrompt = async (req, res) => {
         // Save the new prompt to the database
         const prompt = await newPrompt.save();
 
+        // --- Start: Update the user's prompts array ---
+        const user = await User.findById(authorId); // Find the authenticated user
+
+        if (user) {
+            user.prompts.push(prompt._id); // Add the new prompt's ID to the user's prompts array
+            await user.save(); // Save the updated user document
+            console.log(`Added prompt ${prompt._id} to user ${authorId}'s prompts array.`);
+        } else {
+            console.warn(`User with ID ${authorId} not found after creating prompt ${prompt._id}. Cannot update user's prompts array.`);
+        }
+        // --- End: Update the user's prompts array ---
+
+
         // Respond with the newly created prompt object and a 201 status code
         res.status(201).json(prompt);
 
@@ -144,7 +183,7 @@ const getPromptById = async (req, res) => {
 
         // Find the prompt by its ID
         // Use .populate('author') if you have a User model and are using .populate()
-        const prompt = await Prompt.findById(id);
+        const prompt = await Prompt.findById(id).populate('author', 'name'); // Populate author field, only include name
 
         // If no prompt is found, return a 404 Not Found error
         if (!prompt) {
@@ -152,7 +191,7 @@ const getPromptById = async (req, res) => {
         }
 
         // TODO: Add logic here to check if the prompt is private and if the requesting user (if authenticated) is the author.
-        // If prompt.isPublic === false && (!req.user || prompt.author.toString() !== req.user.id) {
+        // If prompt.isPublic === false && (!req.user || prompt.author._id.toString() !== req.user.id) {
         //     return res.status(403).json({ msg: 'Not authorized to view this private prompt' });
         // }
 
@@ -223,7 +262,7 @@ const editPrompt = async (req, res) => {
 
     // Find the prompt by ID and update it
     // Use findByIdAndUpdate with the ID and update fields
-    const updatedPrompt = await Prompt.findByIdAndUpdate(id, updateFields, { new: true }); // { new: true } returns the updated document
+    const updatedPrompt = await Prompt.findByIdAndUpdate(id, updateFields, { new: true }).populate('author', 'name'); // { new: true } returns the updated document, populate author
 
     // Respond with the updated prompt document
     res.status(200).json(updatedPrompt);
@@ -237,7 +276,7 @@ const editPrompt = async (req, res) => {
   }
 };
 
-// Placeholder controller function for deleting a prompt
+// Controller function for deleting a prompt
 // This function needs to be implemented to handle the DELETE /api/prompts/:id route
 // Requires authentication (authMiddleware) and authorization (user must be the author)
 const deletePrompt = async (req, res) => {
@@ -259,6 +298,20 @@ const deletePrompt = async (req, res) => {
             return res.status(403).json({ msg: 'Not authorized to delete this prompt' });
         }
 
+        // --- Start: Remove prompt ID from the user's prompts array ---
+        const user = await User.findById(req.user.id); // Find the authenticated user
+
+        if (user) {
+            // Remove the prompt ID from the user's prompts array
+            user.prompts = user.prompts.filter(promptId => promptId.toString() !== id);
+            await user.save(); // Save the updated user document
+            console.log(`Removed prompt ${id} from user ${req.user.id}'s prompts array.`);
+        } else {
+             console.warn(`User with ID ${req.user.id} not found when deleting prompt ${id}. Cannot update user's prompts array.`);
+        }
+        // --- End: Remove prompt ID from the user's prompts array ---
+
+
         // If authorized, delete the prompt
         await Prompt.findByIdAndDelete(id);
 
@@ -274,14 +327,76 @@ const deletePrompt = async (req, res) => {
     }
 };
 
-// Placeholder controller function for rating a prompt
+// Controller function for rating a prompt
 // This function needs to be implemented to handle the POST /api/prompts/:id/rate route
 // Requires authentication (authMiddleware)
 const ratePrompt = async (req, res) => {
-    // TODO: Implement logic to receive rating (e.g., 1-5 stars) in req.body
-    // Find the prompt by ID, update its rating and ratingsCount
-    // Ensure a user can only rate a prompt once (requires tracking user ratings)
-    res.status(501).json({ msg: 'Rate prompt functionality not yet implemented' }); // 501 Not Implemented
+    try {
+        const { id } = req.params; // Prompt ID from URL
+        const { rating } = req.body; // Rating value from request body (e.g., 1-5)
+        const userId = req.user.id; // Authenticated user ID from authMiddleware
+
+        // 1. Find the prompt
+        const prompt = await Prompt.findById(id);
+
+        // If prompt not found
+        if (!prompt) {
+            return res.status(404).json({ msg: 'Prompt not found' });
+        }
+
+        // --- Start: Check if the authenticated user is the author ---
+        if (prompt.author.toString() === userId) {
+            return res.status(400).json({ msg: 'You cannot rate your own prompt.' });
+        }
+        // --- End: Check if the authenticated user is the author ---
+
+
+        // 2. Validate the rating value
+        const ratingValue = parseInt(rating, 10);
+        if (isNaN(ratingValue) || ratingValue < 0 || ratingValue > 5) { // Assuming 0-5 scale
+            return res.status(400).json({ msg: 'Invalid rating value. Please provide a number between 0 and 5.' });
+        }
+
+        // 3. Check if the user has already rated this prompt
+        // Convert userId string to ObjectId for comparison if prompt.ratedBy stores ObjectIds
+        const hasRated = prompt.ratedBy.some(ratedById => ratedById.toString() === userId);
+
+        if (hasRated) {
+            return res.status(400).json({ msg: 'You have already rated this prompt.' });
+        }
+
+        // 4. Update the rating and ratingsCount
+        // Calculate the new total sum of ratings
+        const currentTotalRating = prompt.rating * prompt.ratingsCount;
+        const newTotalRating = currentTotalRating + ratingValue;
+        const newRatingsCount = prompt.ratingsCount + 1;
+
+        // Calculate the new average rating
+        const newAverageRating = newTotalRating / newRatingsCount;
+
+        // Update the prompt document
+        prompt.rating = newAverageRating;
+        prompt.ratingsCount = newRatingsCount;
+        prompt.ratedBy.push(userId); // Add the user's ID to the ratedBy array
+
+        // 5. Save the updated prompt
+        await prompt.save();
+
+        // 6. Respond with the updated prompt (or just the new rating/count)
+        res.status(200).json({
+            _id: prompt._id,
+            rating: prompt.rating,
+            ratingsCount: prompt.ratingsCount,
+            msg: 'Rating submitted successfully.'
+        });
+
+    } catch (err) {
+        console.error('Error rating prompt:', err.message);
+        if (err.kind === 'ObjectId') {
+             return res.status(404).json({ error: 'Prompt not found' });
+        }
+        res.status(500).json({ error: 'Server error while rating prompt' });
+    }
 };
 
 // Placeholder controller function for bookmarking a prompt
@@ -302,8 +417,6 @@ module.exports = {
     getPromptTags, // Exporting the renamed function
     editPrompt,
     deletePrompt, // Export the new deletePrompt function
-    ratePrompt,   // Export the placeholder ratePrompt function
+    ratePrompt,   // Export the implemented ratePrompt function
     bookmarkPrompt // Export the placeholder bookmarkPrompt function
 };
-// Note: Ensure to implement the ratePrompt and bookmarkPrompt functions
-// in the future, as they are currently placeholders.

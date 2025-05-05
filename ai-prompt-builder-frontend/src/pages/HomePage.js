@@ -6,10 +6,18 @@ import PromptFilters from '../components/PromptFilters';
 import CreatePromptForm from '../components/CreatePromptForm';
 import PromptTestForm from '../components/PromptTestForm';
 import Footer from '../components/Footer';
+// Import Auth related components and hook
+import LoginForm from '../components/LoginForm';
+import RegisterForm from '../components/RegisterForm';
+import { useAuth } from '../context/AuthContext';
+
 
 // This component acts as the main page layout, incorporating other components.
 // It will manage state related to fetched prompts, filtering, etc., and control which section is displayed.
 const HomePage = () => {
+    // Access authentication state and functions from context
+    const { isAuthenticated, user, login, logout, token } = useAuth(); // Get token from context
+
     // State to hold the list of prompts fetched from the backend
     const [prompts, setPrompts] = useState([]);
     // State to manage loading status while fetching prompts
@@ -23,7 +31,7 @@ const HomePage = () => {
     // State to manage the search term
     const [searchTerm, setSearchTerm] = useState('');
 
-    // State to control which main section is visible ('home', 'create', 'test')
+    // State to control which main section is visible ('home', 'create', 'test', 'login', 'register')
     const [activeSection, setActiveSection] = useState('home');
     // State to hold the prompt data when a user clicks "Try It" to load into the test form
     const [promptToTest, setPromptToTest] = useState(null);
@@ -47,8 +55,13 @@ const HomePage = () => {
                 queryParams.append('tags', filters.tags);
             }
             // Only append isPublic if it's false, otherwise backend defaults to true
+            // If the user is authenticated, we might want to fetch their private prompts too
             if (filters.isPublic === false) {
                  queryParams.append('isPublic', false);
+                 // TODO: If fetching private prompts, add author ID filter here
+                 // if (isAuthenticated && user?._id) {
+                 //      queryParams.append('author', user._id);
+                 // }
             }
             // Add search term to query params if it exists
             if (searchTerm) {
@@ -100,7 +113,54 @@ const HomePage = () => {
 
         fetchPrompts(); // Call the fetch function
 
-    }, [filters, sortBy, sortOrder, searchTerm]); // Dependencies: re-run effect when filters, sort options, or search term change
+    }, [filters, sortBy, sortOrder, searchTerm, isAuthenticated]); // Added isAuthenticated as dependency to refetch if login status changes
+
+
+    // Handler for submitting a rating from a PromptCard
+    const handleRatePrompt = async (promptId, ratingValue) => {
+         // Ensure user is authenticated and token is available
+         if (!isAuthenticated || !token) {
+             console.error("Attempted to rate without authentication.");
+             // This case should ideally be handled by disabling the rating UI in PromptCard,
+             // but this is a safety check.
+             return Promise.reject(new Error('Authentication required to rate.')); // Return a rejected promise
+         }
+
+         try {
+             const response = await fetch(`http://localhost:5000/api/prompts/${promptId}/rate`, { // Replace with your backend URL
+                 method: 'POST',
+                 headers: {
+                     'Content-Type': 'application/json',
+                     'Authorization': `Bearer ${token}`, // Include the JWT token
+                 },
+                 body: JSON.stringify({ rating: ratingValue }), // Send the rating value
+             });
+
+             if (!response.ok) {
+                 const errorData = await response.json();
+                 throw new Error(errorData.msg || 'Failed to submit rating');
+             }
+
+             const updatedPromptData = await response.json();
+             console.log('Rating submitted successfully:', updatedPromptData);
+
+             // Update the prompts state to reflect the new rating and ratingsCount
+             setPrompts(prevPrompts =>
+                 prevPrompts.map(prompt =>
+                     prompt._id === promptId ? { ...prompt, rating: updatedPromptData.rating, ratingsCount: updatedPromptData.ratingsCount } : prompt
+                 )
+             );
+
+             // Return the updated prompt data or a success indicator
+             return updatedPromptData;
+
+         } catch (error) {
+             console.error('Error submitting rating:', error);
+             // Re-throw the error so PromptCard can handle it (e.g., display an error message)
+             throw error;
+         }
+    };
+
 
     // Handler for filter changes from PromptFilters component
     const handleFilterChange = (newFilters) => {
@@ -122,14 +182,22 @@ const HomePage = () => {
         setSearchTerm(term); // Update the search term state
         setActiveSection('home'); // Ensure we are on the home section to see results
         setPromptToTest(null); // Clear any prompt loaded for testing
+        setPromptToEdit(null); // Clear any prompt loaded for editing
     };
 
 
     // Handler for "Create Prompt" button click in HeroSection or Navbar
     const handleCreatePromptClick = () => {
-        setActiveSection('create'); // Show the Create Prompt form section
-        setPromptToTest(null); // Clear any prompt loaded for testing
-        setPromptToEdit(null); // Clear any prompt loaded for editing
+        // Check if authenticated before allowing creation
+        if (isAuthenticated) {
+            setActiveSection('create'); // Show the Create Prompt form section
+            setPromptToTest(null); // Clear any prompt loaded for testing
+            setPromptToEdit(null); // Clear any prompt loaded for editing
+        } else {
+            // If not authenticated, redirect to login (or show login modal/message)
+            setActiveSection('login'); // Or show a message asking to login
+            console.log("Please log in to create a prompt."); // TODO: Replace with user-friendly message
+        }
     };
 
     // Handler for "Explore Prompts" button click in HeroSection or Navbar
@@ -147,6 +215,15 @@ const HomePage = () => {
         setActiveSection('test'); // Show the Test Prompts section
         setPromptToTest(null); // Start with no prompt loaded for testing
         setPromptToEdit(null); // Clear any prompt loaded for editing
+    };
+
+    // Handlers for switching to Login/Register sections
+    const handleGoToLogin = () => {
+        setActiveSection('login');
+    };
+
+    const handleGoToRegister = () => {
+        setActiveSection('register');
     };
 
 
@@ -186,20 +263,43 @@ const HomePage = () => {
 
     // Handler for "Edit Prompt" action from PromptTestForm
     const handleEditPrompt = ({ content, initialPrompt }) => { // Receives content and initialPrompt from PromptTestForm
-        setPromptToEdit({ ...initialPrompt, content: content }); // Set prompt data for editing, using current content from test form
-        setActiveSection('create'); // Switch to the create/edit form section
-        setPromptToTest(null); // Clear prompt being tested
+         // Check if authenticated before allowing edit
+         if (isAuthenticated) {
+            setPromptToEdit({ ...initialPrompt, content: content }); // Set prompt data for editing, using current content from test form
+            setActiveSection('create'); // Switch to the create/edit form section
+            setPromptToTest(null); // Clear prompt being tested
+         } else {
+             // If not authenticated, redirect to login (or show login modal/message)
+             setActiveSection('login'); // Or show a message asking to login
+             console.log("Please log in to edit a prompt."); // TODO: Replace with user-friendly message
+         }
+    };
+
+    // Handler for successful login/registration from auth forms
+    const handleAuthSuccess = (authData) => {
+        // The login function from useAuth will handle setting state and localStorage
+        login(authData.user, authData.token);
+        // After successful auth, navigate back to the home page
+        setActiveSection('home');
+        console.log("Authentication successful, navigating to home.");
+        // You might want to refetch prompts here to potentially see private prompts
+        // fetchPrompts(); // Uncomment if you implement fetching private prompts for logged-in users
     };
 
 
     return (
         <div id="webcrumbs">
              {/* Render Navbar, passing section click handlers and search handler */}
+             {/* Pass auth section handlers to Navbar */}
+             {/* isAuthenticated, user, and logout are now consumed directly by Navbar from context */}
              <Navbar
                  onCreateClick={handleCreatePromptClick}
                  onExploreClick={handleExplorePromptsClick}
                  onTestClick={handleTestPromptClick}
                  onSearch={handleSearch}
+                 onGoToLogin={handleGoToLogin} // Pass handler to go to login
+                 onGoToRegister={handleGoToRegister} // Pass handler to go to register
+                 // Removed isAuthenticated, user, and onLogout props
              />
 
             {/* Removed max-w-screen-xl and mx-auto from this div */}
@@ -241,6 +341,7 @@ const HomePage = () => {
                                             key={prompt._id}
                                             prompt={prompt}
                                             onTryItClick={handleTryItClick} // Pass handler to PromptCard
+                                            onRatePrompt={handleRatePrompt} // Pass the new rating handler
                                         />
                                     ))}
                                 </div>
@@ -254,11 +355,19 @@ const HomePage = () => {
                             {/* Create/Edit Prompt Section */}
                             <section className="mb-12">
                                 {/* Render CreatePromptForm, passing handlers and prompt data for editing */}
-                                <CreatePromptForm
-                                    initialPromptData={promptToEdit} // Pass prompt data if editing
-                                    onPromptSaved={handlePromptSaved} // Use a single handler for create/save
-                                    onCancel={handleCancelCreate}
-                                />
+                                {/* Only render if authenticated */}
+                                {isAuthenticated ? (
+                                     <CreatePromptForm
+                                         initialPromptData={promptToEdit} // Pass prompt data if editing
+                                         onPromptSaved={handlePromptSaved} // Use a single handler for create/save
+                                         onCancel={handleCancelCreate}
+                                     />
+                                ) : (
+                                     // Optional: Show a message or redirect if not authenticated
+                                     <div className="text-center text-gray-600">
+                                         Please log in to create or edit prompts.
+                                     </div>
+                                )}
                             </section>
                         </>
                     )}
@@ -274,6 +383,33 @@ const HomePage = () => {
                                      onBack={handleBackFromTest} // Handler to go back to home
                                      onEdit={handleEditPrompt} // Pass edit handler
                                 />
+                            </section>
+                        </>
+                    )}
+
+                    {/* Login Section */}
+                    {activeSection === 'login' && (
+                        <>
+                            <section className="mb-12">
+                                {/* Render LoginForm, passing the success handler */}
+                                <LoginForm onLoginSuccess={handleAuthSuccess} />
+                                {/* Add a link to go to register */}
+                                <p className="text-center text-gray-600 text-sm mt-4">
+                                    Don't have an account? <button type="button" className="text-primary-600 hover:underline" onClick={handleGoToRegister}>Register</button>
+                                </p>
+                            </section>
+                        </>
+                    )}
+
+                    {activeSection === 'register' && (
+                        <>
+                            <section className="mb-12">
+                                {/* Render RegisterForm, passing the success handler */}
+                                <RegisterForm onRegisterSuccess={handleAuthSuccess} />
+                                {/* Add a link to go to login */}
+                                <p className="text-center text-gray-600 text-sm mt-4">
+                                    Already have an account? <button type="button" className="text-primary-600 hover:underline" onClick={handleGoToLogin}>Login</button>
+                                </p>
                             </section>
                         </>
                     )}
@@ -387,11 +523,14 @@ const HomePage = () => {
                                 </div>
 
                                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                                    <button className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-medium transition-all hover:shadow-lg flex items-center justify-center gap-2">
-                                        <span className="material-symbols-outlined">person_add</span>
-                                        Sign Up Free
-                                    </button>
-                                    <button className="border border-primary-600 text-primary-600 hover:bg-primary-50 px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2">
+                                    {/* Conditionally render Sign Up button in Community section */}
+                                    {!isAuthenticated && (
+                                        <button type="button" className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-medium transition-all hover:shadow-lg flex items-center justify-center gap-2" onClick={handleGoToRegister}>
+                                            <span className="material-symbols-outlined">person_add</span>
+                                            Sign Up Free
+                                        </button>
+                                    )}
+                                    <button type="button" className="border border-primary-600 text-primary-600 hover:bg-primary-50 px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2">
                                         <span className="material-symbols-outlined">play_circle</span>
                                         Watch Demo
                                     </button>

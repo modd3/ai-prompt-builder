@@ -1,11 +1,15 @@
 const express = require('express');
+// This line requires the db.js file - check this path!
+const connectDB = require('./config/db'); // <-- Potential issue here
 const promptRoutes = require('./routes/prompts'); // Import prompt routes
 const testRoutes = require('./routes/test'); // Import test routes
-const authRoutes = require('./routes/auth'); // Import auth routes // Added import for auth routes
+const authRoutes = require('./routes/auth'); // Import auth routes
 const cors = require('cors'); // Import CORS middleware to allow cross-origin requests
-require('dotenv').config({ path: './.env' }); // Load environment variables from .env in the parent directory
+require('dotenv').config({ path: '../.env' }); // Load environment variables from .env in the parent directory
 
 const app = express(); // Create an Express application instance
+
+// Connect Database - This function needs to be called
 
 
 // Init Middleware
@@ -18,7 +22,7 @@ app.use(cors());
 // Use the imported route handlers for specific URL paths
 app.use('/api/prompts', promptRoutes); // All routes defined in prompts.js will be under /api/prompts
 app.use('/api/test-prompt', testRoutes); // All routes defined in test.js will be under /api/test-prompt
-app.use('/api/auth', authRoutes); // All routes defined in auth.js will be under /api/auth // Added auth routes
+app.use('/api/auth', authRoutes); // All routes defined in auth.js will be under /api/auth
 
 
 // Basic root route for testing the server is running

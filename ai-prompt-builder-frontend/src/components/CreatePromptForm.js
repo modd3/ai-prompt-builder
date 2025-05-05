@@ -1,8 +1,12 @@
-import React, { useState, useRef } from 'react'; // Import useRef
+import React, { useState, useRef, useEffect } from 'react'; // Import useRef and useEffect
+import { useAuth } from '../context/AuthContext'; // Import useAuth hook
 
 // Component for the "Create Your Prompt" form section
-// Accepts handlers for successful creation and cancellation
-const CreatePromptForm = ({ onPromptCreated, onCancel }) => {
+// Accepts handlers for successful creation and cancellation, and initial data for editing
+const CreatePromptForm = ({ onPromptSaved, onCancel, initialPromptData = null }) => { // Renamed onPromptCreated to onPromptSaved
+    // Access authentication state and functions from context
+    const { isAuthenticated, user, token } = useAuth(); // Get token from context
+
     // State variables for form inputs
     const [title, setTitle] = useState('');
     const [targetModel, setTargetModel] = useState('ChatGPT'); // Default target model
@@ -14,6 +18,27 @@ const CreatePromptForm = ({ onPromptCreated, onCancel }) => {
 
     // Create a ref for the textarea element
     const textareaRef = useRef(null);
+
+    // Effect to populate form if initialPromptData is provided (for editing)
+    useEffect(() => {
+        if (initialPromptData) {
+            setTitle(initialPromptData.title || '');
+            setTargetModel(initialPromptData.targetModel || 'ChatGPT');
+            setContent(initialPromptData.content || '');
+            setTags(initialPromptData.tags ? initialPromptData.tags.join(', ') : ''); // Join tags array into string
+            setIsPublic(initialPromptData.isPublic || false);
+            setMessage(''); // Clear any previous messages when loading for edit
+        } else {
+             // Reset form if no initial data (for creating)
+             setTitle('');
+             setTargetModel('ChatGPT');
+             setContent('');
+             setTags('');
+             setIsPublic(false);
+             setMessage('');
+        }
+    }, [initialPromptData]); // Re-run effect when initialPromptData changes
+
 
     // Function to insert text at the current cursor position in the textarea
     const insertAtCursor = (textToInsert, cursorOffset = 0) => {
@@ -85,7 +110,7 @@ const CreatePromptForm = ({ onPromptCreated, onCancel }) => {
     };
 
 
-    // Handle form submission
+    // Handle form submission (for both creating and editing)
     const handleSubmit = async (e) => {
         e.preventDefault(); // Prevent the default browser form submission
 
@@ -94,6 +119,15 @@ const CreatePromptForm = ({ onPromptCreated, onCancel }) => {
              setMessage('Error: Please fill in all required fields (Title, Content, Target Model).');
              return;
         }
+
+        // Ensure user is authenticated before attempting to save
+        if (!isAuthenticated || !token) {
+            setMessage('Error: You must be logged in to create or edit prompts.');
+            // Optionally redirect to login page here
+            // onGoToLogin(); // If you pass this handler down
+            return;
+        }
+
 
         // Set loading state and clear previous messages
         setLoading(true);
@@ -106,18 +140,24 @@ const CreatePromptForm = ({ onPromptCreated, onCancel }) => {
             targetModel,
             tags, // Send the comma-separated string; backend will split it
             isPublic,
-            // TODO: Add author ID if implementing user authentication
-            // author: yourAuthUserId,
+            // The author ID is added on the backend from the authenticated user (req.user.id)
+            // We don't need to send it from the frontend
         };
 
+        // Determine the API endpoint and HTTP method based on whether we are editing or creating
+        const method = initialPromptData ? 'PUT' : 'POST';
+        const url = initialPromptData
+            ? `http://localhost:5000/api/prompts/${initialPromptData._id}` // URL for updating
+            : 'http://localhost:5000/api/prompts'; // URL for creating // Replace with your backend URL
+
         try {
-            // Make a POST request to your backend API endpoint for creating prompts
-            const response = await fetch('http://localhost:5000/api/prompts', { // Replace with your backend URL
-                method: 'POST',
+            // Make the API request
+            const response = await fetch(url, {
+                method: method,
                 headers: {
                     'Content-Type': 'application/json',
-                    // If authentication is required, add the Authorization header here
-                    // 'Authorization': `Bearer ${yourAuthToken}`,
+                    // Include the Authorization header with the JWT token
+                    'Authorization': `Bearer ${token}`, // <-- Added Authorization header
                 },
                 body: JSON.stringify(promptData), // Send data as JSON string
             });
@@ -126,33 +166,40 @@ const CreatePromptForm = ({ onPromptCreated, onCancel }) => {
             if (!response.ok) {
                 const errorData = await response.json();
                 // Throw an error with a message from the backend if available
-                throw new Error(errorData.msg || 'Failed to create prompt');
+                throw new Error(errorData.msg || `Failed to ${initialPromptData ? 'update' : 'create'} prompt`);
             }
 
             // Parse the JSON response from the backend
             const result = await response.json();
-            setMessage('Prompt created successfully!'); // Set success message
-            console.log('Prompt created:', result);
+            setMessage(`Prompt ${initialPromptData ? 'updated' : 'created'} successfully!`); // Set success message
+            console.log(`Prompt ${initialPromptData ? 'updated' : 'created'}:`, result);
 
-            // Optional: Clear the form after successful submission
-            setTitle('');
-            setContent('');
-            setTags('');
-            setIsPublic(false);
-            setTargetModel('ChatGPT'); // Reset to default model
-            setContent(''); // Clear textarea content
-            // Removed the erroneous line: setVariables({}); // Clear variables if any were extracted (though not used in create form)
+            // Optional: Clear the form after successful creation (not ideal for editing)
+            if (!initialPromptData) {
+                setTitle('');
+                setContent('');
+                setTags('');
+                setIsPublic(false);
+                setTargetModel('ChatGPT'); // Reset to default model
+                setContent(''); // Clear textarea content
+            }
 
 
-            // Call the parent component's handler for successful creation
-            if (onPromptCreated) {
-                 onPromptCreated(result); // Pass the created prompt data back
+            // Call the parent component's handler for successful save (create or update)
+            if (onPromptSaved) {
+                 onPromptSaved(result); // Pass the saved prompt data back
             }
 
         } catch (error) {
             // Handle errors during the fetch request or from the backend
-            console.error('Error creating prompt:', error);
+            console.error(`Error ${initialPromptData ? 'updating' : 'creating'} prompt:`, error);
             setMessage(`Error: ${error.message}`); // Set error message
+             // If the error is "Not authorized", you might want to log out the user or redirect to login
+             if (error.message.includes('Not authorized')) {
+                 console.log("Authentication expired or invalid. Please log in again.");
+                 // logout(); // Call logout from context if needed
+                 // onGoToLogin(); // If you pass this handler down
+             }
         } finally {
             // Reset loading state regardless of success or failure
             setLoading(false);
@@ -171,9 +218,12 @@ const CreatePromptForm = ({ onPromptCreated, onCancel }) => {
         }
     };
 
+    // Don't render the form if not authenticated and not editing (handled in HomePage)
+    // But we keep the check inside handleSubmit for safety.
+
     return (
         <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
-            <h3 className="text-2xl font-bold mb-6">Create Your Prompt</h3>
+            <h3 className="text-2xl font-bold mb-6">{initialPromptData ? 'Edit Your Prompt' : 'Create Your Prompt'}</h3> {/* Change title based on editing */}
             <form onSubmit={handleSubmit}> {/* Associate form with handleSubmit */}
                 <div className="mb-4">
                     <label className="block text-gray-700 mb-2 font-medium">Prompt Title</label>
@@ -191,7 +241,7 @@ const CreatePromptForm = ({ onPromptCreated, onCancel }) => {
                     <label className="block text-gray-700 mb-2 font-medium">Target Model</label>
                     <div className="flex flex-wrap gap-3">
                         {/* Map over supported models to create buttons */}
-                        {['ChatGPT', 'Claude', 'Gemini', 'Llama', 'Midjourney', 'HuggingFace'].map(model => ( // Added HuggingFace
+                        {['ChatGPT', 'Claude', 'Gemini', 'Llama', 'Midjourney', 'HuggingFace'].map(model => (
                            <button
                                 key={model}
                                 type="button" // Use type="button" to prevent form submission when clicking
@@ -262,9 +312,9 @@ const CreatePromptForm = ({ onPromptCreated, onCancel }) => {
                         <button
                            type="submit" // This button triggers the form submission
                            className="bg-primary-600 text-white px-5 py-2 rounded-lg hover:bg-primary-700 transition shadow hover:shadow-md text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                           disabled={loading} // Disable button while loading
+                           disabled={loading || !isAuthenticated} // Disable button while loading or if not authenticated
                         >
-                            {loading ? 'Publishing...' : 'Publish Prompt'} {/* Change text based on loading state */}
+                            {loading ? (initialPromptData ? 'Saving...' : 'Publishing...') : (initialPromptData ? 'Save Changes' : 'Publish Prompt')} {/* Change text based on loading and editing state */}
                         </button>
                     </div>
                 </div>
@@ -274,6 +324,12 @@ const CreatePromptForm = ({ onPromptCreated, onCancel }) => {
                     <div className={`mt-4 p-3 rounded-lg text-sm ${message.startsWith('Error') ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
                         {message}
                     </div>
+                )}
+                 {/* Message if not authenticated */}
+                {!isAuthenticated && (
+                     <div className="mt-4 p-3 rounded-lg text-sm bg-yellow-100 text-yellow-800">
+                         Please log in to create or edit prompts.
+                     </div>
                 )}
             </form>
         </div>
