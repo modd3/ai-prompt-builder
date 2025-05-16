@@ -16,7 +16,10 @@ const app = express(); // Create an Express application instance
 // express.json() parses incoming requests with JSON payloads
 app.use(express.json({ extended: false }));
 // cors() enables Cross-Origin Resource Sharing for all routes, allowing your frontend to connect
-app.use(cors());
+app.use(cors({
+  origin: 'https://ai-prompt-builder.onrender.com',
+  credentials: true,
+}));
 
 // Define API Routes
 // Use the imported route handlers for specific URL paths
