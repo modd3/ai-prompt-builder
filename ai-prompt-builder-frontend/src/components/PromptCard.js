@@ -97,26 +97,34 @@ const PromptCard = ({ prompt, onTryItClick, onRatePrompt }) => { // Added onRate
 
 
     return (
+        // Outer Container - Matches snippet
         <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition-all hover:-translate-y-1">
+            {/* Content Area - Matches snippet */}
             <div className="p-5">
+                {/* Header Row - Matches snippet */}
                 <div className="flex justify-between items-center mb-3">
+                    {/* Model Info - Matches snippet */}
                     <div className="flex items-center gap-2">
-                        {/* Model Icon */}
+                        {/* Model Icon - Matches snippet */}
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center ${modelColorClass}`}>
                             <span className="material-symbols-outlined text-sm">{modelIcon}</span>
                         </div>
-                        <span className="font-medium">{targetModel}</span> {/* Display targetModel */}
+                        {/* Display targetModel - Matches snippet */}
+                        <span className="font-medium">{targetModel}</span>
                     </div>
-                    {/* Status Tag (Assuming status is not in backend model, keep static or remove) */}
-                    {/* You might add a status based on rating or views if needed */}
-                    {/* <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">High Success</span> */}
+                    {/* Status Tag - Added back as static placeholder like snippet */}
+                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                        High Success {/* Static text from snippet */}
+                    </span>
                 </div>
+                {/* Title - Matches snippet */}
                 <h4 className="font-bold text-lg mb-2">{title}</h4>
-                 {/* Display prompt content preview or a description field if available */}
+                 {/* Display prompt content preview - Matches snippet */}
                 <p className="text-gray-600 text-sm mb-4 line-clamp-2">
                     {/* Use description if available, otherwise a snippet of content */}
                     {prompt.description || (content ? content.substring(0, 150) + '...' : 'No description available.')}
                 </p>
+                {/* Interaction Row - Matches snippet */}
                 <div className="flex justify-between items-center">
                     {/* Rating Display and Input */}
                     <div className="flex items-center gap-1">
@@ -152,11 +160,12 @@ const PromptCard = ({ prompt, onTryItClick, onRatePrompt }) => { // Added onRate
                                  <span className="material-symbols-outlined text-yellow-500 text-sm">
                                      star
                                  </span>
-                                 <span className="text-sm">{rating ? rating.toFixed(1) : 'N/A'} ({ratingsCount || 0})</span> {/* Display rating and count */}
+                                 {/* Display rating and count - Matches snippet format */}
+                                 <span className="text-sm">{rating ? rating.toFixed(1) : 'N/A'} ({ratingsCount || 0})</span>
                              </>
                          )}
                     </div>
-                    {/* Action Buttons */}
+                    {/* Action Buttons - Matches snippet */}
                     <div className="flex gap-2">
                         {/* Bookmark Button - Needs backend logic and user authentication */}
                         <button className="text-gray-500 hover:text-primary-600 transition-colors" aria-label="Bookmark">
@@ -175,11 +184,13 @@ const PromptCard = ({ prompt, onTryItClick, onRatePrompt }) => { // Added onRate
                      </div>
                  )}
             </div>
+            {/* Footer Area - Matches snippet */}
             <div className="bg-gray-50 p-3 flex justify-between border-t border-gray-100">
                 {/* Author Info (Assuming author might be populated from backend) */}
                 {/* Conditionally render author info ONLY if the current user is NOT the author */}
                 {!isAuthor && author && (
                      <div className="flex items-center gap-2">
+                         {/* Author Avatar - Matches snippet structure/size */}
                          <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-300">
                              <img
                                  src={author.avatar || 'https://placehold.co/24x24/cccccc/000000?text=User'} // Use author avatar or placeholder
@@ -188,10 +199,11 @@ const PromptCard = ({ prompt, onTryItClick, onRatePrompt }) => { // Added onRate
                                  onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/24x24/cccccc/000000?text=User' }} // Placeholder on error
                              />
                          </div>
-                         <span className="text-sm text-gray-600">{author?.name || 'Unknown'}</span> {/* Display author name */}
+                         {/* Display author name - Matches snippet */}
+                         <span className="text-sm text-gray-600">{author?.name || 'Unknown'}</span>
                      </div>
                 )}
-                {/* If the user IS the author, you might show a different indicator here, or nothing */}
+                {/* If the user IS the author, show "Your Prompt" indicator */}
                 {isAuthor && (
                      <div className="flex items-center gap-2">
                           <span className="material-symbols-outlined text-primary-600 text-sm">person</span>
