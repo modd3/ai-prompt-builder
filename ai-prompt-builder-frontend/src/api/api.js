@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API = axios.create({ baseURL: process.env.REACT_APP_API_URL });
+const API = axios.create({ baseURL: process.env.FRONTEND_API_URL });
 
 
 // Fetch prompts with optional filtering and sorting
