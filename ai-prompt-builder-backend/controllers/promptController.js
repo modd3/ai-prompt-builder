@@ -54,7 +54,7 @@ const getPrompts = async (req, res) => {
              // For now, assuming this route is public and author filter is just for querying
              filter.author = author;
         }
-
+console.log(filter.author);
 
         // Add search filter if search term is provided
         if (search) {
