@@ -104,7 +104,7 @@ const HomePage = () => {
 
             try {
                 // Make the GET request to the backend API for the main list
-                const response = await fetch(`http://localhost:5000/api/prompts?${queryParams.toString()}`); // Replace with your backend URL
+                const response = await fetch(process.env.FRONTEND_API_URL + `/prompts?${queryParams.toString()}`); // Replace with your backend URL
 
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -147,7 +147,7 @@ const HomePage = () => {
                 queryParams.append('limit', 6); // Limit to 6 prompts
                 queryParams.append('isPublic', true); // Only show public prompts
                 try {
-                    const response = await fetch(`http://localhost:5000/api/prompts?${queryParams.toString()}`);
+                    const response = await fetch(process.env.FRONTEND_API_URL + `/prompts?${queryParams.toString()}`);
                     if (!response.ok) {
                          const errorData = await response.json();
                          throw new Error(errorData.error || 'Failed to fetch most viewed prompts');
@@ -171,7 +171,7 @@ const HomePage = () => {
                  // Add a filter to only get prompts with at least one rating, maybe?
                  // queryParams.append('ratingsCount', {$gt: 0}); // Requires backend support for this filter
                 try {
-                    const response = await fetch(`http://localhost:5000/api/prompts?${queryParams.toString()}`);
+                    const response = await fetch(process.env.FRONTEND_API_URL + `/prompts?${queryParams.toString()}`);
                     if (!response.ok) {
                          const errorData = await response.json();
                          throw new Error(errorData.error || 'Failed to fetch top rated prompts');
@@ -210,7 +210,7 @@ const HomePage = () => {
          }
 
          try {
-             const response = await fetch(`http://localhost:5000/api/prompts/${promptId}/rate`, { // Replace with your backend URL
+             const response = await fetch(process.env.FRONTEND_API_URL + `/prompts/${promptId}/rate`, { // Replace with your backend URL
                  method: 'POST',
                  headers: {
                      'Content-Type': 'application/json',
