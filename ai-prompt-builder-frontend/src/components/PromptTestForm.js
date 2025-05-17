@@ -31,45 +31,96 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => { // Added 
     const availableModelOptions = ['ChatGPT (GPT-4)', 'ChatGPT (GPT-3.5)', 'Claude', 'Gemini', 'HuggingFace']; // Display names for select
 
 
-    // Effect hook to fetch saved prompts when the component mounts
+    // Effect hook to fetch saved prompts when the component mounts or initialPrompt changes
     useEffect(() => {
         const fetchSavedPrompts = async () => {
             try {
-                // TODO: In a real app, fetch the user's SAVED prompts from your backend here
-                // This would likely be a different endpoint or filtered GET /api/prompts?author=userId&isPublic=false
-                // For now, using dummy data that includes variable placeholders
-                const dummyPrompts = [
-                     { _id: '', title: 'Select a prompt', content: '' }, // Default option
-                     { _id: 'saved1', title: 'Product Description Generator', content: 'Create a product description for {{product_name}} that is {{length}} words long and uses {{keywords}}.' },
-                     { _id: 'saved2', title: 'Blog Post Outline Creator', content: 'Generate a blog post outline about {{topic}} for a {{target_audience}}.' },
-                     { _id: 'saved3', title: 'Code Debugger Helper', content: 'Debug the following code snippet: ```{{code}}```. The error is {{error_description}}.' },
-                ];
-                setSavedPrompts(dummyPrompts);
+                // --- START: Code to fetch saved prompts from backend ---
 
-                 // If an initial prompt object is passed (e.g., from clicking "Try It" on a card),
-                 // set the initial content and extract variables.
-                 if (initialPrompt) {
-                      // Check if initialPrompt._id exists in dummyPrompts before setting selectedPromptId
-                      const foundInDummy = dummyPrompts.find(p => p._id === initialPrompt._id);
-                      setSelectedPromptId(foundInDummy ? initialPrompt._id : ''); // Only set if found in dummy
-                      setCurrentPromptContent(initialPrompt.content); // Set the content for testing
-                      setVariables(extractVariablesFromPrompt(initialPrompt.content)); // Extract variables
-                 } else {
-                     // If no initial prompt, set default state
-                     setSelectedPromptId('');
-                     setCurrentPromptContent('');
-                     setVariables({});
-                 }
+                // Define your backend API endpoint
+                // IMPORTANT: Replace '/api/saved-prompts' with your actual backend URL
+                const apiUrl = process.env.REACT_APP_FRONTEND_API_URL + '/api/saved-prompts';
+
+                // Make the API call
+                const response = await fetch(apiUrl, {
+                    method: 'GET', // Or the appropriate HTTP method
+                    headers: {
+                        'Content-Type': 'application/json',
+                        // Add any necessary authentication headers, e.g.:
+                        // 'Authorization': `Bearer ${yourAuthToken}`, // You will likely need this
+                    },
+                });
+
+                // Check if the request was successful
+                if (!response.ok) {
+                    // Handle non-200 responses
+                    console.error(`Error fetching saved prompts: ${response.status} ${response.statusText}`);
+                    // Depending on your error handling strategy, you might want to
+                    // throw an error, set an error state, or return.
+                     throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // Parse the JSON response
+                const fetchedPrompts = await response.json();
+
+                // --- END: Code to fetch saved prompts from backend ---
+
+
+                // --- START: Process fetched data and handle initialPrompt ---
+
+                // Add a default "Select a prompt" option at the beginning of the fetched list
+                const promptsWithDefault = [
+                     { _id: '', title: 'Select a prompt', content: '' }, // Default option
+                     ...fetchedPrompts, // Add the fetched prompts
+                ];
+
+                // Update the state with the fetched and combined prompts
+                setSavedPrompts(promptsWithDefault);
+
+                // Now, handle the initialPrompt after successfully fetching and setting savedPrompts
+                if (initialPrompt && initialPrompt._id) {
+                     // Find the initial prompt within the fetched prompts (or the combined list)
+                     const foundInitial = promptsWithDefault.find(p => p._id === initialPrompt._id);
+
+                     if (foundInitial) {
+                          // If found, set the selected prompt, its content, and extract variables
+                          setSelectedPromptId(foundInitial._id);
+                          setCurrentPromptContent(foundInitial.content);
+                          setVariables(extractVariablesFromPrompt(foundInitial.content));
+                     } else {
+                         // If initialPrompt._id was provided but not found in fetched saved prompts,
+                         // it might be an external prompt (like from "Try It" on a card) that isn't saved yet.
+                         // In this case, we set the content and variables directly from initialPrompt
+                         // and keep the selectedPromptId as empty, indicating it's not a *saved* selection.
+                         setSelectedPromptId(''); // Keep dropdown at "Select a prompt"
+                         setCurrentPromptContent(initialPrompt.content);
+                         setVariables(extractVariablesFromPrompt(initialPrompt.content));
+                     }
+                } else {
+                    // If no initial prompt is provided, set default state
+                    setSelectedPromptId('');
+                    setCurrentPromptContent('');
+                    setVariables({});
+                }
+
+                // --- END: Process fetched data and handle initialPrompt ---
 
             } catch (error) {
                 console.error('Error fetching saved prompts:', error);
-                // Handle error
+                // TODO: Handle error appropriately in your UI (e.g., show an error message)
+                // Display an error option in the dropdown and clear other states
+                 setSavedPrompts([{ _id: '', title: 'Error loading prompts', content: '' }]);
+                 setSelectedPromptId('');
+                 setCurrentPromptContent('');
+                 setVariables({});
             }
         };
 
         fetchSavedPrompts(); // Call the fetch function
 
     }, [initialPrompt]); // Re-run this effect if the initialPrompt prop changes
+    // Add other dependencies here if the fetch depends on them (e.g., user ID from context)
+    // , setSavedPrompts, setSelectedPromptId, setCurrentPromptContent, setVariables, extractVariablesFromPrompt // Add these if you use useCallback or memoize these functions
 
     // Helper function to extract variable names (e.g., {{variable_name}}) from prompt content
     const extractVariablesFromPrompt = (content) => {
@@ -135,10 +186,13 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => { // Added 
         };
 
         try {
-            const response = await fetch(process.env.REACT_APP_FRONTEND_API_URL + "/test-prompt", { // Replace with your backend URL
+            // IMPORTANT: Replace "/test-prompt" with your actual backend endpoint for running tests
+            const response = await fetch(process.env.REACT_APP_FRONTEND_API_URL + "/test-prompt", {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json',
-                         },
+                headers: {
+                    'Content-Type': 'application/json',
+                     // Add authentication headers here too if needed for this endpoint
+                },
                 body: JSON.stringify(testData),
             });
 
