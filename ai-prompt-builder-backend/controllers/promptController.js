@@ -16,6 +16,7 @@ const getPrompts = async (req, res) => {
         if (targetModel && targetModel !== 'All') { // Added check for 'All' filter
             filter.targetModel = targetModel;
         }
+
         if (tags) {
             // Assuming tags query param is a comma-separated string
             filter.tags = { $in: tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0) }; // Filter out empty tags
@@ -54,7 +55,7 @@ const getPrompts = async (req, res) => {
              // For now, assuming this route is public and author filter is just for querying
              filter.author = author;
         }
-console.log(author);
+console.log(filter);
 
         // Add search filter if search term is provided
         if (search) {
