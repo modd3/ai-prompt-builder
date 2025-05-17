@@ -147,8 +147,8 @@ const CreatePromptForm = ({ onPromptSaved, onCancel, initialPromptData = null })
         // Determine the API endpoint and HTTP method based on whether we are editing or creating
         const method = initialPromptData ? 'PUT' : 'POST';
         const url = initialPromptData
-            ? `http://localhost:5000/api/prompts/${initialPromptData._id}` // URL for updating
-            : 'http://localhost:5000/api/prompts'; // URL for creating // Replace with your backend URL
+            ? process.env.REACT_APP_FRONTEND_API_URL + `/prompts/${initialPromptData._id}` // URL for updating
+            : process.env.REACT_APP_FRONTEND_API_URL + '/prompts'; // URL for creating // Replace with your backend URL
 
         try {
             // Make the API request
