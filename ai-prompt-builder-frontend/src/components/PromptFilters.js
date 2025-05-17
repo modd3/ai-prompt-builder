@@ -20,7 +20,7 @@ const PromptFilters = ({ onFilterChange, onSortChange }) => {
         const fetchTags = async () => {
             try {
                 // Fetch unique tags from the backend API
-                const response = await fetch(process.env.FRONTEND_API_URL + '/prompts/tags'); // Replace with your backend URL
+                const response = await fetch(process.env.REACT_APP_FRONTEND_API_URL + '/prompts/tags'); // Replace with your backend URL
                 if (!response.ok) {
                     throw new Error('Failed to fetch tags');
                 }
