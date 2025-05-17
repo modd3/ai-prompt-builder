@@ -215,6 +215,7 @@ const HomePage = () => {
                  headers: {
                      'Content-Type': 'application/json',
                      'Authorization': `Bearer ${token}`, // Include the JWT token
+                     'Access-Control-Allow-Origin': 'https://promptshare-0q9j.onrender.com',
                  },
                  body: JSON.stringify({ rating: ratingValue }), // Send the rating value
              });
