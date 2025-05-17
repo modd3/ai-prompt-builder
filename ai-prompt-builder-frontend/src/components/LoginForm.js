@@ -38,7 +38,7 @@ const LoginForm = ({ onLoginSuccess }) => {
             };
 
             // Make the POST request to the backend login endpoint
-            const response = await fetch(process.env.FRONTEND_API_URL + '/auth/login', { // Replace with your backend URL
+            const response = await fetch(process.env.REACT_APP_FRONTEND_API_URL + '/auth/login', { // Replace with your backend URL
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
