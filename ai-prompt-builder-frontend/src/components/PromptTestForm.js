@@ -138,7 +138,6 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => { // Added 
             const response = await fetch(process.env.REACT_APP_FRONTEND_API_URL + "/test-prompt", { // Replace with your backend URL
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json',
-                            'Access-Control-Allow-Origin': 'https://promptshare-0q9j.onrender.com',
                          },
                 body: JSON.stringify(testData),
             });
