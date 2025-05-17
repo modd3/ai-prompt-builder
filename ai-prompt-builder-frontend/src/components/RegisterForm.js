@@ -49,7 +49,7 @@ const RegisterForm = ({ onRegisterSuccess }) => {
             };
 
             // Make the POST request to the backend registration endpoint
-            const response = await fetch('http://localhost:5000/api/auth/register', { // Replace with your backend URL
+            const response = await fetch(process.env.FRONTEND_API_URL + '/auth/register', { // Replace with your backend URL
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
