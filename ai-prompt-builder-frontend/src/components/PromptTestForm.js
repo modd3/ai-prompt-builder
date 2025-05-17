@@ -135,7 +135,7 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => { // Added 
         };
 
         try {
-            const response = await fetch('http://localhost:5000/api/test-prompt', { // Replace with your backend URL
+            const response = await fetch(process.env.FRONTEND_API_URL + "/test-prompt", { // Replace with your backend URL
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(testData),
