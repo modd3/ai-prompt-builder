@@ -92,8 +92,6 @@ const Footer = () => {
                     </ul>
                 </div>
 
-                {/* Empty div to match original layout spacing */}
-                <div></div> {/* This column was empty in the original template */}
             </div>
              {/* Optional: Add copyright or other footer text below the columns */}
              <div className="text-center text-gray-500 text-sm mt-8">

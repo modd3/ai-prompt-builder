@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import TestResultsDisplay from './TestResultsDisplay';
+import { useAuth } from '../context/AuthContext'; // Import useAuth hook
 
 // Component for the "Test Your Prompts" section
 // Accepts an initialPrompt object when a user clicks "Try It" on a card,
 // and handlers for going back and editing the prompt.
-const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => { // Added onEdit prop
+const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => {
+    // Access authentication state and functions from context
+    const { isAuthenticated, token } = useAuth(); // Get isAuthenticated and token from context
+
     // State for the selected saved prompt (if any) - used for the dropdown value
     const [selectedPromptId, setSelectedPromptId] = useState('');
     // State for the actual prompt content being tested (can be from saved or manually entered)
@@ -34,6 +38,7 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => { // Added 
     // Effect hook to fetch saved prompts when the component mounts or initialPrompt changes
     useEffect(() => {
         const fetchSavedPrompts = async () => {
+<<<<<<< HEAD
             try {
                 // --- START: Code to fetch saved prompts from backend ---
 
@@ -98,10 +103,48 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => { // Added 
                      }
                 } else {
                     // If no initial prompt is provided, set default state
+=======
+            if (!isAuthenticated || !token) { // Check if user is authenticated and token exists
+                console.warn('User not authenticated. Cannot fetch private prompts.');
+                setSavedPrompts([{ _id: '', title: 'Please log in to see your prompts', content: '' }]);
+                return;
+            }
+
+            try {
+                // Fetch the user's SAVED prompts from your backend
+                const response = await fetch('http://localhost:5000/api/prompts/mine', { // Use the /api/prompts/mine endpoint
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` // Include the Bearer token
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.msg || `Failed to fetch user prompts: HTTP error! status: ${response.status}`);
+                }
+
+                const userPrompts = await response.json(); // Assuming the backend returns an array of prompts directly
+
+                // Add a default "Select a prompt" option at the beginning of the array
+                const promptsWithDefault = [{ _id: '', title: 'Select a prompt', content: '' }, ...userPrompts];
+                setSavedPrompts(promptsWithDefault);
+
+                // If an initial prompt object is passed (e.g., from clicking "Try It" on a card),
+                // set the initial content and extract variables.
+                if (initialPrompt) {
+                    const foundPrompt = promptsWithDefault.find(p => p._id === initialPrompt._id);
+                    setSelectedPromptId(foundPrompt ? initialPrompt._id : '');
+                    setCurrentPromptContent(initialPrompt.content);
+                    setVariables(extractVariablesFromPrompt(initialPrompt.content));
+                } else {
+>>>>>>> 41de3ca (App Functional - Add user profile page)
                     setSelectedPromptId('');
                     setCurrentPromptContent('');
                     setVariables({});
                 }
+<<<<<<< HEAD
 
                 // --- END: Process fetched data and handle initialPrompt ---
 
@@ -113,24 +156,33 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => { // Added 
                  setSelectedPromptId('');
                  setCurrentPromptContent('');
                  setVariables({});
+=======
+
+            } catch (error) {
+                console.error('Error fetching saved prompts:', error);
+                setSavedPrompts([{ _id: '', title: 'Error loading prompts', content: '' }]);
+>>>>>>> 41de3ca (App Functional - Add user profile page)
             }
         };
 
         fetchSavedPrompts(); // Call the fetch function
 
+<<<<<<< HEAD
     }, [initialPrompt]); // Re-run this effect if the initialPrompt prop changes
     // Add other dependencies here if the fetch depends on them (e.g., user ID from context)
     // , setSavedPrompts, setSelectedPromptId, setCurrentPromptContent, setVariables, extractVariablesFromPrompt // Add these if you use useCallback or memoize these functions
+=======
+    }, [initialPrompt, isAuthenticated, token]); // Re-run this effect if initialPrompt, isAuthenticated, or token changes
+>>>>>>> 41de3ca (App Functional - Add user profile page)
 
     // Helper function to extract variable names (e.g., {{variable_name}}) from prompt content
     const extractVariablesFromPrompt = (content) => {
          const vars = {};
-         if (!content || typeof content !== 'string') return vars; // Handle null/undefined or non-string content
+         if (!content || typeof content !== 'string') return vars;
          const regex = /\{\{([^}]+)\}\}/g; // Regex to find {{...}}
          let match;
-         // Loop through all matches and add variable names to the vars object with empty values
          while ((match = regex.exec(content)) !== null) {
-             vars[match[1].trim()] = ''; // Use the captured group [1] as the variable name
+             vars[match[1].trim()] = '';
          }
          return vars;
     };
@@ -139,24 +191,21 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => { // Added 
     const handlePromptSelect = (e) => {
         const promptId = e.target.value;
         setSelectedPromptId(promptId);
-        // Find the selected prompt object from the savedPrompts list
         const selected = savedPrompts.find(p => p._id === promptId);
 
         if (selected) {
-            setCurrentPromptContent(selected.content); // Set the content for testing
-            setVariables(extractVariablesFromPrompt(selected.content)); // Extract variables from the selected prompt
+            setCurrentPromptContent(selected.content);
+            setVariables(extractVariablesFromPrompt(selected.content));
         } else {
-            // Handle the "Select a prompt" option or if prompt not found
             setCurrentPromptContent('');
             setVariables({});
         }
-         setTestResults(null); // Clear previous primary test results when prompt changes
-         setComparisonResults({}); // Clear previous comparison results
+         setTestResults(null);
+         setComparisonResults({});
     };
 
      // Handle changes in the variable input fields
     const handleVariableChange = (varName, value) => {
-         // Update the value of a specific variable in the variables state
          setVariables(prevVars => ({
              ...prevVars,
              [varName]: value,
@@ -167,11 +216,8 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => { // Added 
     const injectVariables = (content, vars) => {
         let processedContent = content;
         for (const varName in vars) {
-            // Create a regular expression to find all occurrences of the variable placeholder
-            // Escape special characters in the variable name for regex safety
             const escapedVarName = varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const regex = new RegExp(`\\{\\{${escapedVarName}\\}\\}`, 'g');
-            // Replace the placeholder with the variable's current value
             processedContent = processedContent.replace(regex, vars[varName]);
         }
         return processedContent;
@@ -181,8 +227,8 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => { // Added 
     const runTestForModel = async (modelName, contentToTest) => {
         const testData = {
             promptContent: contentToTest,
-            targetModel: modelName, // Use the base model name
-            variables: variables, // Pass variables (even if not used by backend test route directly)
+            targetModel: modelName,
+            variables: variables,
         };
 
         try {
@@ -213,55 +259,44 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => { // Added 
 
     // Handle the "Run Test & Preview Results" button click (Primary Test)
     const handleRunTest = async () => {
-        setLoading(true); // Set primary loading state
-        setTestResults(null); // Clear previous primary results
-        setComparisonResults({}); // Clear previous comparison results
+        setLoading(true);
+        setTestResults(null);
+        setComparisonResults({});
 
-        // Inject the current variable values into the prompt content
         const finalPromptContent = injectVariables(currentPromptContent, variables);
 
-        // Basic validation
         if (!finalPromptContent || !testingModel) {
              setTestResults({ error: 'Prompt content and target model must be selected.' });
              setLoading(false);
              return;
         }
 
-        // Extract the base model name from the selected testing model string (e.g., 'ChatGPT' from 'ChatGPT (GPT-4)')
         const primaryModelName = testingModel.split(' ')[0];
 
-        // Run the primary test
         const primaryResult = await runTestForModel(primaryModelName, finalPromptContent);
 
-        setTestResults(primaryResult); // Store the primary test result
-        setLoading(false); // Reset primary loading state
-
-        // No longer automatically trigger all comparison tests here.
-        // They will be triggered individually by clicking the model buttons in TestResultsDisplay.
+        setTestResults(primaryResult);
+        setLoading(false);
     };
 
     // New handler to run a test for a single comparison model
     const handleRunSingleComparisonTest = async (modelName) => {
-         // Ensure there is content to test
          const finalPromptContent = injectVariables(currentPromptContent, variables);
          if (!finalPromptContent) {
              console.warn("No prompt content to run comparison tests.");
              return;
          }
 
-         // Set loading state for this specific comparison model
          setComparisonResults(prevResults => ({
              ...prevResults,
-             [modelName]: { ...prevResults[modelName], loading: true, error: null } // Preserve existing data, set loading
+             [modelName]: { ...prevResults[modelName], loading: true, error: null }
          }));
 
-         // Run the test for the single model
          const result = await runTestForModel(modelName, finalPromptContent);
 
-         // Update the state with the result for this specific model
          setComparisonResults(prevResults => ({
              ...prevResults,
-             [modelName]: result, // Overwrite with the new result
+             [modelName]: result,
          }));
     };
 
@@ -269,16 +304,13 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => { // Added 
     // Handle the "Regenerate" button click (calls the primary test handler)
     const handleRegenerate = () => {
         console.log("Regenerating primary test...");
-        handleRunTest(); // Simply call the primary test handler again
+        handleRunTest();
     };
 
     // Handle the "Edit Prompt" button click (calls the parent's onEdit handler)
     const handleEditPrompt = () => {
         console.log("Editing prompt...");
-        // Call the onEdit handler passed from the parent (HomePage),
-        // passing the current prompt content and potentially other details for editing.
         if (onEdit) {
-            // Pass the current content and maybe the initialPrompt object if available
             onEdit({ content: currentPromptContent, initialPrompt: initialPrompt });
         }
     };
@@ -298,10 +330,9 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => { // Added 
                     </label>
                     <select
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition text-sm"
-                        value={selectedPromptId} // Bind select value to state
-                        onChange={handlePromptSelect} // Handle change
+                        value={selectedPromptId}
+                        onChange={handlePromptSelect}
                     >
-                        {/* Map over saved prompts to create options */}
                         {savedPrompts.map(prompt => (
                              <option key={prompt._id} value={prompt._id}>{prompt.title}</option>
                         ))}
@@ -320,7 +351,7 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => { // Added 
                              value={currentPromptContent}
                              onChange={(e) => {
                                  setCurrentPromptContent(e.target.value);
-                                 setVariables(extractVariablesFromPrompt(e.target.value)); // Update variables if content changes
+                                 setVariables(extractVariablesFromPrompt(e.target.value));
                              }}
                          ></textarea>
                      </div>
@@ -330,30 +361,29 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => { // Added 
                     <label className="block text-gray-700 mb-2 text-sm">Model</label>
                     <select
                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition text-sm"
-                       value={testingModel} // Bind select value to state
-                       onChange={(e) => setTestingModel(e.target.value)} // Handle change
+                       value={testingModel}
+                       onChange={(e) => setTestingModel(e.target.value)}
                     >
-                        {/* Options for testing models - Ensure these match backend cases */}
-                         {availableModelOptions.map(modelOption => (
+                        {availableModelOptions.map(modelOption => (
                              <option key={modelOption} value={modelOption}>{modelOption}</option>
                          ))}
                     </select>
                 </div>
 
                 {/* Variable Inputs - Dynamically generated based on extracted variables */}
-                {Object.keys(variables).length > 0 && ( // Only show if variables were found
+                {Object.keys(variables).length > 0 && (
                     <div className="mb-4">
                         <label className="block text-gray-700 mb-2 text-sm">
                             Enter prompt variables
                         </label>
                         {Object.keys(variables).map(varName => (
                             <input
-                                key={varName} // Use variable name as key
+                                key={varName}
                                 type="text"
-                                placeholder={`${varName}: Value`} // Placeholder shows variable name
+                                placeholder={`${varName}: Value`}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition mb-2 text-sm"
-                                value={variables[varName]} // Bind input value to state
-                                onChange={(e) => handleVariableChange(varName, e.target.value)} // Handle change
+                                value={variables[varName]}
+                                onChange={(e) => handleVariableChange(varName, e.target.value)}
                             />
                         ))}
                     </div>
@@ -362,20 +392,20 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => { // Added 
                 {/* Run Test Button */}
                 <button
                    className="w-full bg-primary-600 text-white py-3 rounded-lg hover:bg-primary-700 transition shadow hover:shadow-md flex items-center justify-center gap-2 group text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                   onClick={handleRunTest} // Handle button click
-                   disabled={loading || !currentPromptContent} // Disable if loading or no prompt content to test
+                   onClick={handleRunTest}
+                   disabled={loading || !currentPromptContent}
                 >
                     <span className={`material-symbols-outlined transform ${loading ? 'animate-spin' : 'group-hover:rotate-45'} transition-all duration-300`}>
-                        {loading ? 'progress_activity' : 'rocket_launch'} {/* Change icon based on loading state */}
+                        {loading ? 'progress_activity' : 'rocket_launch'}
                     </span>
-                    {loading ? 'Running Test...' : 'Run Test & Preview Results'} {/* Change text based on loading state */}
+                    {loading ? 'Running Test...' : 'Run Test & Preview Results'}
                 </button>
 
                 {/* Button to go back to the home/explore section */}
                 {onBack && (
                      <button
                          className="w-full mt-3 border border-gray-300 px-5 py-2 rounded-lg hover:bg-gray-50 transition text-gray-700 text-sm"
-                         onClick={onBack} // Call the handler passed from parent
+                         onClick={onBack}
                      >
                          Back to Prompts
                      </button>
@@ -385,16 +415,13 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => { // Added 
 
             {/* Test Results Section (Right Side) - Use the TestResultsDisplay component */}
             <TestResultsDisplay
-                results={testResults} // Pass primary results
-                loading={loading} // Pass primary loading state
-                comparisonResults={comparisonResults} // Pass comparison results
-                onRegenerate={handleRegenerate} // Pass regenerate handler
-                onEditPrompt={handleEditPrompt} // Pass edit handler
-                // Pass the new handler for running a single comparison test
+                results={testResults}
+                loading={loading}
+                comparisonResults={comparisonResults}
+                onRegenerate={handleRegenerate}
+                onEditPrompt={handleEditPrompt}
                 onRunSingleComparisonTest={handleRunSingleComparisonTest}
-                // Pass the list of available models for comparison
                 availableModels={availableModels}
-                // Pass the primary testing model so TestResultsDisplay knows which one is primary
                 primaryTestingModel={testingModel.split(' ')[0]}
             />
         </div>

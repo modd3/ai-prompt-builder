@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'; // Import useRef
-import Navbar from '../components/navbar'; // Import Navbar
+import Navbar from '../components/Navbar'; // Import Navbar
 import HeroSection from '../components/HeroSection';
 import PromptCard from '../components/PromptCard';
 import PromptFilters from '../components/PromptFilters';

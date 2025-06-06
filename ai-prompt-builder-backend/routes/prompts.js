@@ -5,6 +5,7 @@ const {
     getPrompts,
     createPrompt,
     getPromptById,
+    getUserPrompts,
     getPromptTags,
     editPrompt,
     deletePrompt, // Placeholder for delete controller
@@ -26,6 +27,17 @@ router.get('/', getPrompts);
 // Add authMiddleware here to protect the create route
 router.post('/', authMiddleware, createPrompt);
 
+// @route   GET /api/prompts/tags
+// @desc    Get unique prompt tags
+// @access  Public
+// This route can remain public as it provides general tag information.
+router.get('/tags', getPromptTags);
+
+// @route   GET /api/prompts/mine
+// @desc    Get this user's prompts
+// @access  private
+router.get('/mine', authMiddleware, getUserPrompts);
+
 // @route   GET /api/prompts/:id
 // @desc    Get a single prompt by ID
 // @access  Public (Note: You might want to add logic in the controller
@@ -33,11 +45,7 @@ router.post('/', authMiddleware, createPrompt);
 // This route can remain public to view public prompts by ID.
 router.get('/:id', getPromptById);
 
-// @route   GET /api/prompts/tags
-// @desc    Get unique prompt tags
-// @access  Public
-// This route can remain public as it provides general tag information.
-router.get('/tags', getPromptTags);
+
 
 // @route   PUT /api/prompts/:id
 // @desc    Update a prompt by ID

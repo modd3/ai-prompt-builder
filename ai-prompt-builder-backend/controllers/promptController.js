@@ -153,11 +153,10 @@ const createPrompt = async (req, res) => {
 
         // --- Start: Update the user's prompts array ---
         const user = await User.findById(authorId); // Find the authenticated user
-
         if (user) {
             user.prompts.push(prompt._id); // Add the new prompt's ID to the user's prompts array
             await user.save(); // Save the updated user document
-            console.log(`Added prompt ${prompt._id} to user ${authorId}'s prompts array.`);
+            console.log(`Added prompt '${prompt.title}' to user => ${user.name}'s prompts array.`);
         } else {
             console.warn(`User with ID ${authorId} not found after creating prompt ${prompt._id}. Cannot update user's prompts array.`);
         }
@@ -171,6 +170,27 @@ const createPrompt = async (req, res) => {
         console.error('Error creating prompt:', err.message);
         // Send a 500 status code for server errors
         res.status(500).json({ error: err.message });
+    }
+};
+
+const getUserPrompts = async (req, res) => {
+    try {
+        const userId = req.user.id; // Get the authenticated user's ID from req.user
+        const user = await User.findById(userId).populate('prompts'); // Find the user and populate the 'prompts' array
+
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        console.log("User Prompts: ");
+        console.log(user.prompts);
+
+        // Send the user's prompts array in the response
+        res.status(200).json(user.prompts);
+
+    } catch (e) {
+        console.error('Error fetching user prompts:', e.message); // Use console.error for errors
+        res.status(500).json({ error: 'Server error while fetching user prompts' });
     }
 };
 
@@ -415,6 +435,7 @@ module.exports = {
     getPrompts,
     createPrompt,
     getPromptById,
+    getUserPrompts, // prompts this user authored
     getPromptTags, // Exporting the renamed function
     editPrompt,
     deletePrompt, // Export the new deletePrompt function

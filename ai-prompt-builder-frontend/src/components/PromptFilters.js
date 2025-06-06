@@ -99,7 +99,7 @@ const PromptFilters = ({ onFilterChange, onSortChange }) => {
         <div className="flex items-center justify-between mb-6">
             {/* Model Filter Buttons */}
             <div className="flex flex-wrap gap-2">
-                {['All', 'ChatGPT', 'Midjourney', 'Claude', 'Gemini'].map(filter => (
+                {['All', 'ChatGPT', 'Midjourney', 'HuggingFace', 'Claude', 'Gemini'].map(filter => (
                     <button
                         key={filter}
                         className={getModelButtonClass(filter)}
@@ -110,13 +110,13 @@ const PromptFilters = ({ onFilterChange, onSortChange }) => {
                 ))}
                 {/* TODO: Add a tags filter input or dropdown using 'availableTags' state */}
                  {/* Example Tags Input: */}
-                 {/* <input
+                 <input
                      type="text"
                      placeholder="Filter by tags (comma-separated)"
                      className="px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 transition outline-none focus:ring-2 focus:ring-primary-500"
                      value={selectedTags}
                      onChange={handleTagsInputChange}
-                 /> */}
+                 /> 
             </div>
             {/* Sort Dropdown */}
             <div className="flex items-center gap-2">
