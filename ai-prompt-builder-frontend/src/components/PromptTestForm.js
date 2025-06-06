@@ -38,72 +38,6 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => {
     // Effect hook to fetch saved prompts when the component mounts or initialPrompt changes
     useEffect(() => {
         const fetchSavedPrompts = async () => {
-<<<<<<< HEAD
-            try {
-                // --- START: Code to fetch saved prompts from backend ---
-
-                // Define your backend API endpoint
-                // IMPORTANT: Replace '/api/saved-prompts' with your actual backend URL
-                const apiUrl = process.env.REACT_APP_FRONTEND_API_URL + '/api/saved-prompts';
-
-                // Make the API call
-                const response = await fetch(apiUrl, {
-                    method: 'GET', // Or the appropriate HTTP method
-                    headers: {
-                        'Content-Type': 'application/json',
-                        // Add any necessary authentication headers, e.g.:
-                        // 'Authorization': `Bearer ${yourAuthToken}`, // You will likely need this
-                    },
-                });
-
-                // Check if the request was successful
-                if (!response.ok) {
-                    // Handle non-200 responses
-                    console.error(`Error fetching saved prompts: ${response.status} ${response.statusText}`);
-                    // Depending on your error handling strategy, you might want to
-                    // throw an error, set an error state, or return.
-                     throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                // Parse the JSON response
-                const fetchedPrompts = await response.json();
-
-                // --- END: Code to fetch saved prompts from backend ---
-
-
-                // --- START: Process fetched data and handle initialPrompt ---
-
-                // Add a default "Select a prompt" option at the beginning of the fetched list
-                const promptsWithDefault = [
-                     { _id: '', title: 'Select a prompt', content: '' }, // Default option
-                     ...fetchedPrompts, // Add the fetched prompts
-                ];
-
-                // Update the state with the fetched and combined prompts
-                setSavedPrompts(promptsWithDefault);
-
-                // Now, handle the initialPrompt after successfully fetching and setting savedPrompts
-                if (initialPrompt && initialPrompt._id) {
-                     // Find the initial prompt within the fetched prompts (or the combined list)
-                     const foundInitial = promptsWithDefault.find(p => p._id === initialPrompt._id);
-
-                     if (foundInitial) {
-                          // If found, set the selected prompt, its content, and extract variables
-                          setSelectedPromptId(foundInitial._id);
-                          setCurrentPromptContent(foundInitial.content);
-                          setVariables(extractVariablesFromPrompt(foundInitial.content));
-                     } else {
-                         // If initialPrompt._id was provided but not found in fetched saved prompts,
-                         // it might be an external prompt (like from "Try It" on a card) that isn't saved yet.
-                         // In this case, we set the content and variables directly from initialPrompt
-                         // and keep the selectedPromptId as empty, indicating it's not a *saved* selection.
-                         setSelectedPromptId(''); // Keep dropdown at "Select a prompt"
-                         setCurrentPromptContent(initialPrompt.content);
-                         setVariables(extractVariablesFromPrompt(initialPrompt.content));
-                     }
-                } else {
-                    // If no initial prompt is provided, set default state
-=======
             if (!isAuthenticated || !token) { // Check if user is authenticated and token exists
                 console.warn('User not authenticated. Cannot fetch private prompts.');
                 setSavedPrompts([{ _id: '', title: 'Please log in to see your prompts', content: '' }]);
@@ -112,7 +46,7 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => {
 
             try {
                 // Fetch the user's SAVED prompts from your backend
-                const response = await fetch('http://localhost:5000/api/prompts/mine', { // Use the /api/prompts/mine endpoint
+                const response = await fetch(process.env.REACT_APP_FRONTEND_API_URL + '/api/prompts/mine', { // Use the /api/prompts/mine endpoint
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -139,41 +73,20 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => {
                     setCurrentPromptContent(initialPrompt.content);
                     setVariables(extractVariablesFromPrompt(initialPrompt.content));
                 } else {
->>>>>>> 41de3ca (App Functional - Add user profile page)
                     setSelectedPromptId('');
                     setCurrentPromptContent('');
                     setVariables({});
                 }
-<<<<<<< HEAD
-
-                // --- END: Process fetched data and handle initialPrompt ---
-
-            } catch (error) {
-                console.error('Error fetching saved prompts:', error);
-                // TODO: Handle error appropriately in your UI (e.g., show an error message)
-                // Display an error option in the dropdown and clear other states
-                 setSavedPrompts([{ _id: '', title: 'Error loading prompts', content: '' }]);
-                 setSelectedPromptId('');
-                 setCurrentPromptContent('');
-                 setVariables({});
-=======
 
             } catch (error) {
                 console.error('Error fetching saved prompts:', error);
                 setSavedPrompts([{ _id: '', title: 'Error loading prompts', content: '' }]);
->>>>>>> 41de3ca (App Functional - Add user profile page)
             }
         };
 
         fetchSavedPrompts(); // Call the fetch function
 
-<<<<<<< HEAD
-    }, [initialPrompt]); // Re-run this effect if the initialPrompt prop changes
-    // Add other dependencies here if the fetch depends on them (e.g., user ID from context)
-    // , setSavedPrompts, setSelectedPromptId, setCurrentPromptContent, setVariables, extractVariablesFromPrompt // Add these if you use useCallback or memoize these functions
-=======
     }, [initialPrompt, isAuthenticated, token]); // Re-run this effect if initialPrompt, isAuthenticated, or token changes
->>>>>>> 41de3ca (App Functional - Add user profile page)
 
     // Helper function to extract variable names (e.g., {{variable_name}}) from prompt content
     const extractVariablesFromPrompt = (content) => {
