@@ -46,7 +46,7 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => {
 
             try {
                 // Fetch the user's SAVED prompts from your backend
-                const response = await fetch(process.env.REACT_APP_FRONTEND_API_URL + '/api/prompts/mine', { // Use the /api/prompts/mine endpoint
+                const response = await fetch(process.env.REACT_APP_FRONTEND_API_URL + '/prompts/mine', { // Use the /api/prompts/mine endpoint
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
