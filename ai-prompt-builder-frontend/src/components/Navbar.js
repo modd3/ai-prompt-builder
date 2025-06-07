@@ -10,7 +10,8 @@ const Navbar = ({
     onSearch, // Handler for search action
     onGoToLogin, // Handler to navigate to login section
     onGoToRegister, // Handler to navigate to register section
-    onGoHome // Handler for logo/Home button to scroll to top
+    onGoHome, // Handler for logo/Home button to scroll to top
+    onGoToProfile // NEW: Handler to navigate to profile section
 }) => {
     // Access authentication state and functions from context
     const { isAuthenticated, user, logout } = useAuth();
@@ -218,7 +219,7 @@ const Navbar = ({
                                      {/* Dropdown Items */}
                                      <button
                                          className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors text-sm"
-                                         onClick={() => { /* TODO: Implement Profile page navigation */ console.log('Go to Profile'); handleUserDropdownItemClick(null); }} // Close dropdown
+                                         onClick={() => handleUserDropdownItemClick(onGoToProfile)} // Link to Profile Page
                                      >
                                          Profile
                                      </button>
@@ -259,11 +260,9 @@ const Navbar = ({
                 // Fixed overlay covering the screen
                 <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40">
                     {/* Actual menu content - positioned on the right */}
-                    {/* Added ref to the menu content div */}
                     <div
                         ref={mobileMenuRef} // Attach ref to the menu content
                         className="fixed top-0 right-0 h-full w-64 bg-white shadow-lg p-6 flex flex-col gap-4 transform transition-transform duration-300 ease-in-out translate-x-0"
-                        // You could add translate-x-full and conditional classes for slide-in animation
                     >
                         {/* Menu Links */}
                         <button
@@ -319,27 +318,27 @@ const Navbar = ({
                                 <hr className="border-gray-200 my-2"/> {/* Separator */}
                                  {/* User Avatar and Name in Mobile Menu */}
                                 <div className="flex items-center gap-2 text-gray-700">
-                                    <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-300 flex-shrink-0"> {/* Slightly larger avatar in mobile menu */}
-                                        <img src={user?.avatarUrl || 'https://placehold.co/32x32/cccccc/000000?text=U'} alt="User Avatar" className="w-full h-full object-cover"/> {/* Placeholder */}
+                                    <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-300 flex-shrink-0">
+                                        <img src={user?.avatarUrl || 'https://placehold.co/32x32/cccccc/000000?text=U'} alt="User Avatar" className="w-full h-full object-cover"/>
                                     </div>
-                                    <span className="font-medium">{user?.name || 'User'}</span> {/* Display user name */}
+                                    <span className="font-medium">{user?.name || 'User'}</span>
                                 </div>
-                                {/* Placeholder Profile and Settings links */}
+                                {/* Profile and Settings links */}
                                 <button
                                      className="text-left text-gray-800 hover:text-primary-600 transition-colors font-medium focus:outline-none"
-                                     onClick={() => { /* TODO: Implement Profile page navigation */ console.log('Go to Profile'); handleMobileMenuItemClick(null); }} // Close menu
+                                     onClick={() => handleMobileMenuItemClick(onGoToProfile)} // Link to Profile Page
                                 >
                                      Profile
                                 </button>
                                 <button
                                      className="text-left text-gray-800 hover:text-primary-600 transition-colors font-medium focus:outline-none"
-                                     onClick={() => { /* TODO: Implement Settings page navigation */ console.log('Go to Settings'); handleMobileMenuItemClick(null); }} // Close menu
+                                     onClick={() => { /* TODO: Implement Settings page navigation */ console.log('Go to Settings'); handleMobileMenuItemClick(null); }}
                                 >
                                      Settings
                                 </button>
                                 <button
                                     className="text-left text-gray-800 hover:text-primary-600 transition-colors font-medium focus:outline-none"
-                                    onClick={() => handleMobileMenuItemClick(logout)} // Use the logout function from context
+                                    onClick={() => handleMobileMenuItemClick(logout)}
                                 >
                                     Logout
                                 </button>

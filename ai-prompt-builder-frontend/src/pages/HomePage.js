@@ -10,6 +10,14 @@ import Footer from '../components/Footer';
 import LoginForm from '../components/LoginForm';
 import RegisterForm from '../components/RegisterForm';
 import { useAuth } from '../context/AuthContext';
+// Import the new ProfilePage component
+import ProfilePage from '../components/UserProfile'; // New Import
+
+
+// Define the base URL for the backend API from environment variables.
+// It should be process.env.REACT_APP_BACKEND_URL, not FRONTEND_API_URL.
+// The fallback is localhost:5000 for local development.
+const BACKEND_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
 
 // This component acts as the main page layout, incorporating other components.
@@ -24,6 +32,8 @@ const HomePage = () => {
     const [mostViewedPrompts, setMostViewedPrompts] = useState([]); // State for Most Viewed prompts
     // State to hold the list of prompts for the trending section (Top Rated)
     const [topRatedPrompts, setTopRatedPrompts] = useState([]); // State for Top Rated prompts
+    // State to hold prompts created by the logged-in user for their profile page
+    const [userPrompts, setUserPrompts] = useState([]); // New state for user's prompts
 
     // State to manage loading status while fetching prompts for main list
     const [loadingPrompts, setLoadingPrompts] = useState(true);
@@ -31,6 +41,8 @@ const HomePage = () => {
     const [loadingMostViewed, setLoadingMostViewed] = useState(true); // Loading state for Most Viewed
     // State to manage loading status while fetching Top Rated trending prompts
     const [loadingTopRated, setLoadingTopRated] = useState(true); // Loading state for Top Rated
+    // State to manage loading status while fetching user's prompts
+    const [loadingUserPrompts, setLoadingUserPrompts] = useState(true); // New loading state
 
     // State to hold any error message during fetching (can be shared or separate)
     const [fetchError, setFetchError] = useState(null); // Using a single error state for simplicity
@@ -42,8 +54,8 @@ const HomePage = () => {
     // State to manage the search term
     const [searchTerm, setSearchTerm] = useState('');
 
-    // State to control which main section is visible ('home', 'create', 'test', 'login', 'register')
-    const [activeSection, setActiveSection] = useState('home');
+    // State to control which main section is visible ('home', 'create', 'test', 'login', 'register', 'profile')
+    const [activeSection, setActiveSection] = useState('home'); // Added 'profile'
     // State to hold the prompt data when a user clicks "Try It" to load into the test form
     const [promptToTest, setPromptToTest] = useState(null);
     // State to hold prompt data when user clicks "Edit Prompt"
@@ -104,7 +116,8 @@ const HomePage = () => {
 
             try {
                 // Make the GET request to the backend API for the main list
-                const response = await fetch(process.env.REACT_APP_FRONTEND_API_URL + `/prompts?${queryParams.toString()}`); // Replace with your backend URL
+                // CORRECTED: Using BACKEND_BASE_URL
+                const response = await fetch(`${BACKEND_BASE_URL}/api/prompts?${queryParams.toString()}`);
 
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -117,7 +130,7 @@ const HomePage = () => {
 
             } catch (error) {
                 console.error('Error fetching main prompts:', error);
-                setFetchError(`Failed to load prompts: ${error.message}`); // Set error message
+                setFetchError(`Failed to load prompts: ${error.message || 'Network error'}`); // Set error message
             } finally {
                 setLoadingPrompts(false); // Reset loading state for main list
             }
@@ -147,7 +160,8 @@ const HomePage = () => {
                 queryParams.append('limit', 6); // Limit to 6 prompts
                 queryParams.append('isPublic', true); // Only show public prompts
                 try {
-                    const response = await fetch(process.env.REACT_APP_FRONTEND_API_URL + `/prompts?${queryParams.toString()}`);
+                    // CORRECTED: Using BACKEND_BASE_URL
+                    const response = await fetch(`${BACKEND_BASE_URL}/api/prompts?${queryParams.toString()}`);
                     if (!response.ok) {
                          const errorData = await response.json();
                          throw new Error(errorData.error || 'Failed to fetch most viewed prompts');
@@ -156,7 +170,7 @@ const HomePage = () => {
                     setMostViewedPrompts(data.prompts);
                 } catch (error) {
                     console.error('Error fetching most viewed prompts:', error);
-                    setFetchError(`Failed to load trending prompts: ${error.message}`); // Use shared error state
+                    setFetchError(`Failed to load trending prompts: ${error.message || 'Network error'}`); // Use shared error state
                 } finally {
                     setLoadingMostViewed(false);
                 }
@@ -171,7 +185,8 @@ const HomePage = () => {
                  // Add a filter to only get prompts with at least one rating, maybe?
                  // queryParams.append('ratingsCount', {$gt: 0}); // Requires backend support for this filter
                 try {
-                    const response = await fetch(process.env.REACT_APP_FRONTEND_API_URL + `/prompts?${queryParams.toString()}`);
+                    // CORRECTED: Using BACKEND_BASE_URL
+                    const response = await fetch(`${BACKEND_BASE_URL}/api/prompts?${queryParams.toString()}`);
                     if (!response.ok) {
                          const errorData = await response.json();
                          throw new Error(errorData.error || 'Failed to fetch top rated prompts');
@@ -180,7 +195,7 @@ const HomePage = () => {
                     setTopRatedPrompts(data.prompts);
                 } catch (error) {
                     console.error('Error fetching top rated prompts:', error);
-                    setFetchError(`Failed to load trending prompts: ${error.message}`); // Use shared error state
+                    setFetchError(`Failed to load trending prompts: ${error.message || 'Network error'}`); // Use shared error state
                 } finally {
                     setLoadingTopRated(false);
                 }
@@ -199,6 +214,48 @@ const HomePage = () => {
     }, [activeSection]); // Re-run when activeSection changes
 
 
+    // NEW: useEffect hook to fetch prompts created by the current user
+    useEffect(() => {
+        const fetchUserPrompts = async () => {
+            // Only fetch if authenticated and user object exists, and on the profile section
+            if (!isAuthenticated || !user?._id || activeSection !== 'profile') {
+                setUserPrompts([]); // Clear previous user prompts if not authenticated or not on profile
+                setLoadingUserPrompts(false);
+                return;
+            }
+
+            setLoadingUserPrompts(true);
+            // setFetchError(null); // Manage this carefully if you want specific errors for user prompts
+
+            try {
+                // Fetch prompts created by the current user from the /api/prompts/mine endpoint
+                // CORRECTED: Using BACKEND_BASE_URL
+                const response = await fetch(`${BACKEND_BASE_URL}/api/prompts/mine`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}` // Send token for private prompts
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to fetch your prompts');
+                }
+
+                const data = await response.json();
+                setUserPrompts(data.prompts);
+
+            } catch (error) {
+                console.error('Error fetching user prompts:', error);
+                setFetchError(`Failed to load your prompts: ${error.message || 'Network error'}`);
+            } finally {
+                setLoadingUserPrompts(false);
+            }
+        };
+
+        fetchUserPrompts();
+    }, [isAuthenticated, user, activeSection, token]); // Dependencies for refetching user prompts
+
+
     // Handler for submitting a rating from a PromptCard
     const handleRatePrompt = async (promptId, ratingValue) => {
          // Ensure user is authenticated and token is available
@@ -210,12 +267,13 @@ const HomePage = () => {
          }
 
          try {
-             const response = await fetch(process.env.REACT_APP_FRONTEND_API_URL + `/prompts/${promptId}/rate`, { // Replace with your backend URL
+             // CORRECTED: Using BACKEND_BASE_URL
+             const response = await fetch(`${BACKEND_BASE_URL}/api/prompts/${promptId}/rate`, {
                  method: 'POST',
                  headers: {
                      'Content-Type': 'application/json',
                      'Authorization': `Bearer ${token}`, // Include the JWT token
-                     'Access-Control-Allow-Origin': 'https://promptshare-0q9j.onrender.com',
+                     // Removed 'Access-Control-Allow-Origin' as it's a response header, not a request header
                  },
                  body: JSON.stringify({ rating: ratingValue }), // Send the rating value
              });
@@ -247,9 +305,13 @@ const HomePage = () => {
                       prompt._id === promptId ? { ...prompt, rating: updatedPromptData.rating, ratingsCount: updatedPromptData.ratingsCount } : prompt
                   )
              );
+             // Also update user's own prompts if it was one of theirs
+             setUserPrompts(prevUserPrompts =>
+                prevUserPrompts.map(prompt =>
+                    prompt._id === promptId ? { ...prompt, rating: updatedPromptData.rating, ratingsCount: updatedPromptData.ratingsCount } : prompt
+                )
+             );
 
-
-             // Return the updated prompt data or a success indicator
              return updatedPromptData;
 
          } catch (error) {
@@ -290,6 +352,21 @@ const HomePage = () => {
          setPromptToEdit(null); // Clear any prompt loaded for editing
          // Scroll to the top of the page
          window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+
+    // NEW: Handler to navigate to the profile page
+    const handleGoToProfile = () => {
+        if (isAuthenticated) {
+            setActiveSection('profile');
+            setPromptToTest(null);
+            setPromptToEdit(null);
+            // Scroll to top of the page if navigating to a new full-page section
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+            setActiveSection('login');
+            console.log("Please log in to view your profile.");
+        }
     };
 
 
@@ -348,8 +425,8 @@ const HomePage = () => {
          setTimeout(() => {
               if (testSectionRef.current) {
                    testSectionRef.current.scrollIntoView({ behavior: 'smooth' });
-              }
-         }, 100); // Adjust delay as needed
+                  }
+             }, 100); // Adjust delay as needed
     };
 
     // Handlers for switching to Login/Register sections
@@ -369,8 +446,6 @@ const HomePage = () => {
         setPromptToTest(prompt); // Set the prompt data to be passed to the test form
         setActiveSection('test'); // Show the Test Prompts section
         setPromptToEdit(null); // Clear any prompt loaded for editing
-         // Scroll to the test section after setting the active section
-         // Use a timeout to ensure the section is rendered before scrolling
          setTimeout(() => {
               if (testSectionRef.current) {
                    testSectionRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -455,7 +530,7 @@ const HomePage = () => {
                  onGoToLogin={handleGoToLogin} // Pass handler to go to login
                  onGoToRegister={handleGoToRegister} // Pass handler to go to register
                  onGoHome={handleGoHome} // Pass the new handler for Home button/logo
-                 // Removed isAuthenticated, user, and onLogout props
+                 onGoToProfile={handleGoToProfile} // Pass the handler to Navbar
              />
 
             {/* Removed max-w-screen-xl and mx-auto from this div */}
@@ -484,8 +559,7 @@ const HomePage = () => {
                                  {/* Most Viewed Prompts Sub-section */}
                                  <p className="text-sm text-gray-600 mb-6"><span className="text-primary-600 font-medium">Most Viewed</span></p>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"> {/* Added mb-8 for spacing between lists */}
-                                    {loadingMostViewed && <p>Loading most viewed prompts...</p>}
-                                    {/* Note: Using main fetchError for simplicity for now */}
+                                    {(loadingMostViewed && !fetchError) && <p>Loading most viewed prompts...</p>}
                                     {fetchError && !loadingMostViewed && <p className="text-red-600">Error loading most viewed prompts: {fetchError}</p>}
                                     {!loadingMostViewed && !fetchError && mostViewedPrompts.length === 0 && (
                                         <p>No most viewed prompts found.</p>
@@ -504,8 +578,7 @@ const HomePage = () => {
                                  {/* Top Rated Prompts Sub-section */}
                                  <p className="text-sm text-gray-600 mb-6"><span className="text-primary-600 font-medium">Top-Rated</span></p>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"> {/* No mb-8 on the last grid */}
-                                    {loadingTopRated && <p>Loading top rated prompts...</p>}
-                                    {/* Note: Using main fetchError for simplicity for now */}
+                                    {(loadingTopRated && !fetchError) && <p>Loading top rated prompts...</p>}
                                     {fetchError && !loadingTopRated && <p className="text-red-600">Error loading top rated prompts: {fetchError}</p>}
                                     {!loadingTopRated && !fetchError && topRatedPrompts.length === 0 && (
                                         <p>No top rated prompts found.</p>
@@ -527,15 +600,12 @@ const HomePage = () => {
                             {/* Main Prompts Section (Filterable/Sortable) - Moved to appear after Trending */}
                              <section ref={exploreSectionRef} className="mb-12"> {/* Attach the ref here */}
                                 <h3 className="text-2xl font-bold mb-6">Explore All Prompts</h3> {/* New title for main section */}
-                                {/* Render PromptFilters, passing filter/sort state and handlers */}
                                 <PromptFilters
                                     onFilterChange={handleFilterChange}
                                     onSortChange={handleSortChange}
                                 />
-                                {/* Main Prompt List - Display loading, error, or prompts */}
-                                {/* Grid columns are responsive: 1 col on small, 2 on md, 3 on lg */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {loadingPrompts && <p>Loading prompts...</p>}
+                                    {(loadingPrompts && !fetchError) && <p>Loading prompts...</p>}
                                     {fetchError && !loadingPrompts && <p className="text-red-600">Error loading prompts: {fetchError}</p>}
                                     {!loadingPrompts && !fetchError && prompts.length === 0 && (
                                         <p>No prompts found matching your criteria.</p>
@@ -582,23 +652,35 @@ const HomePage = () => {
                             {/* Test Prompts Section - Attach ref here */}
                             <section ref={testSectionRef} className="mb-12">
                                 <h3 className="text-2xl font-bold mb-6">Test Your Prompts</h3>
-                                {/* Render PromptTestForm, passing the selected prompt data and handlers */}
                                 <PromptTestForm
                                      initialPrompt={promptToTest}
-                                     onBack={handleBackFromTest} // Handler to go back to home
-                                     onEdit={handleEditPrompt} // Pass edit handler
+                                     onBack={handleBackFromTest}
+                                     onEdit={handleEditPrompt}
                                 />
                             </section>
                         </>
                     )}
 
-                    {/* Login Section */}
+                    {activeSection === 'profile' && ( // NEW: Render ProfilePage
+                        <section className="mb-12">
+                            {/* Pass user data from useAuth and the fetched userPrompts */}
+                            <ProfilePage
+                                user={user}
+                                userPrompts={userPrompts}
+                                loadingUserPrompts={loadingUserPrompts}
+                                fetchError={fetchError} // Pass error state for user prompts
+                                onTryItClick={handleTryItClick}
+                                onRatePrompt={handleRatePrompt}
+                                onCreatePromptClick={handleCreatePromptClick} // For "Create New Prompt" button
+                            />
+                        </section>
+                    )}
+
+
                     {activeSection === 'login' && (
                         <>
                             <section className="mb-12">
-                                {/* Render LoginForm, passing the success handler */}
                                 <LoginForm onLoginSuccess={handleAuthSuccess} />
-                                {/* Add a link to go to register */}
                                 <p className="text-center text-gray-600 text-sm mt-4">
                                     Don't have an account? <button type="button" className="text-primary-600 hover:underline" onClick={handleGoToRegister}>Register</button>
                                 </p>
@@ -609,9 +691,7 @@ const HomePage = () => {
                     {activeSection === 'register' && (
                         <>
                             <section className="mb-12">
-                                {/* Render RegisterForm, passing the success handler */}
                                 <RegisterForm onRegisterSuccess={handleAuthSuccess} />
-                                {/* Add a link to go to login */}
                                 <p className="text-center text-gray-600 text-sm mt-4">
                                     Already have an account? <button type="button" className="text-primary-600 hover:underline" onClick={handleGoToLogin}>Login</button>
                                 </p>
@@ -620,13 +700,10 @@ const HomePage = () => {
                     )}
 
 
-                    {/* Features Section - Remains static */}
-                    {activeSection === 'home' && ( // Only show features on the home section
+                    {activeSection === 'home' && (
                         <section className="mb-12">
                             <h3 className="text-2xl font-bold mb-6">Features</h3>
-                            {/* Grid columns are responsive */}
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {/* Keep static feature cards */}
                                 <div className="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-all border border-gray-100 hover:-translate-y-1">
                                     <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
                                         <span className="material-symbols-outlined text-blue-600">edit_document</span>
@@ -697,7 +774,6 @@ const HomePage = () => {
                     )}
 
 
-                    {/* Community Section - Remains static */}
                     {activeSection === 'home' && ( // Only show community section on the home section
                         <section>
                             <div className="bg-primary-50 rounded-2xl p-8 border border-primary-100">
@@ -745,7 +821,6 @@ const HomePage = () => {
                     )}
                 </main>
 
-                {/* Footer Component - Always visible */}
                 <Footer />
             </div>
         </div>

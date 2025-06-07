@@ -16,9 +16,21 @@ const app = express(); // Create an Express application instance
 // express.json() parses incoming requests with JSON payloads
 app.use(express.json({ extended: false }));
 // cors() enables Cross-Origin Resource Sharing for all routes, allowing your frontend to connect
+const allowedOrigins = [
+  'https://ai-prompt-builder.onrender.com', // First allowed origin
+  'http://localhost:3000', // Second allowed origin
+];
+
 app.use(cors({
-  origin: 'https://ai-prompt-builder.onrender.com',
-  credentials: true,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (e.g., curl, mobile apps) or from allowed origins
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true); // Allow the request
+    } else {
+      callback(new Error('Not allowed by CORS')); // Block the request
+    }
+  },
+  credentials: true, // Allow cookies and credentials
 }));
 
 // Define API Routes
