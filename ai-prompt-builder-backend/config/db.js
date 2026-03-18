@@ -1,8 +1,21 @@
 const mongoose = require('mongoose');
 const path = require('path'); // Import path module
-// Load environment variables from .env relative to the directory of this file
-// Assuming db.js is in server/src/config/ and .env is in the project root
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+
+// Load environment variables from .env if not already loaded
+// This supports both local and Docker environments
+const envPaths = [
+  path.resolve(__dirname, '../.env'),      // Current directory (Docker)
+  path.resolve(__dirname, '../../.env'),   // Parent directory (local development)
+];
+
+for (const envPath of envPaths) {
+  try {
+    require('dotenv').config({ path: envPath });
+    break;
+  } catch (err) {
+    // Continue to next path if file doesn't exist
+  }
+}
 
 
 const connectDB = async () => {

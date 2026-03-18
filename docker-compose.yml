@@ -1,0 +1,119 @@
+# ============================================================================
+# Docker Compose Configuration - AI Prompt Builder
+# ============================================================================
+# Orchestrates three services: backend, frontend, and MongoDB
+# Usage:
+#   docker-compose up           # Start all services
+#   docker-compose down         # Stop and remove containers
+#   docker-compose logs -f      # View logs from all services
+# ============================================================================
+
+services:
+  # ========================================================================
+  # MongoDB Database Service
+  # ========================================================================
+  mongo:
+    image: mongo:latest
+    container_name: ai-prompt-builder-mongo
+    ports:
+      - "27017:27017"
+    environment:
+      # Optional: Set MongoDB root credentials (recommended for production)
+      # MONGO_INITDB_ROOT_USERNAME: admin
+      # MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: ai-prompt-builder
+    volumes:
+      # Persistent volume for database data
+      - mongo_data:/data/db
+      - mongo_config:/data/configdb
+    networks:
+      - app-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ========================================================================
+  # Backend Service (Express.js + Node.js)
+  # ========================================================================
+  backend:
+    build:
+      context: ./ai-prompt-builder-backend
+      dockerfile: Dockerfile
+    container_name: ai-prompt-builder-backend
+    ports:
+      - "5000:5000"
+    environment:
+      # Database Configuration
+      MONGO_URI: mongodb://mongo:27017/ai-prompt-builder
+      
+      # Server Configuration
+      PORT: 5000
+      NODE_ENV: production
+      
+      # Authentication
+      JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
+      
+      # AI Model API Keys - Set these in your actual deployment
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-your_openai_api_key_here}
+      HUGGINGFACE_TOKEN: ${HUGGINGFACE_TOKEN:-your_huggingface_token_here}
+      GROQ_API_KEY: ${GROQ_API_KEY:-your_groq_api_key_here}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-your_gemini_api_key_here}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-your_mistral_api_key_here}
+    
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # ========================================================================
+  # Frontend Service (Nginx + React)
+  # ========================================================================
+  frontend:
+    build:
+      context: ./ai-prompt-builder-frontend
+      dockerfile: Dockerfile
+      args:
+        # Pass environment variables at build time for React
+        # In Docker, the frontend uses Nginx to proxy /api/ requests to backend
+        REACT_APP_FRONTEND_API_URL: /api
+        REACT_APP_PRODUCTION: "false"
+    container_name: ai-prompt-builder-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+# ============================================================================
+# Networks
+# ============================================================================
+# Docker network for service-to-service communication
+networks:
+  app-network:
+    driver: bridge
+
+# ============================================================================
+# Volumes
+# ============================================================================
+# Persistent storage for MongoDB data
+volumes:
+  mongo_data:
+    driver: local
+  mongo_config:
+    driver: local

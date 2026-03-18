@@ -22,7 +22,6 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => {
   const [selectedProviders, setSelectedProviders] = useState(new Set());
   const [selectedSpeeds, setSelectedSpeeds] = useState(new Set());
   const [selectedContexts, setSelectedContexts] = useState(new Set());
-  const [favorites, setFavorites] = useState(new Set());
 
   const freeModels = getFreeModels();
   const availableModels = freeModels.map(model => model.id);
@@ -251,15 +250,15 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => {
     setTestingModel(modelId);
   };
 
-  const handleModelFavoriteToggle = (modelId, isFavorited) => {
-    setFavorites(prev => {
-      const newFavorites = new Set(prev);
-      if (isFavorited) {
-        newFavorites.add(modelId);
+  const handleModelFavoriteToggle = (modelId) => {
+    setSelectedModels(prev => {
+      const newSelected = new Set(prev);
+      if (newSelected.has(modelId)) {
+        newSelected.delete(modelId);
       } else {
-        newFavorites.delete(modelId);
+        newSelected.add(modelId);
       }
-      return newFavorites;
+      return Array.from(newSelected);
     });
   };
 
@@ -310,10 +309,6 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => {
     setSelectedContexts(new Set());
   };
 
-  const getFavoriteModels = () => {
-    return freeModels.filter(model => favorites.has(model.id));
-  };
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
       {/* Prompt Playground Section (Left Side) */}
@@ -322,23 +317,6 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => {
           <span className="material-symbols-outlined text-primary-600">smart_toy</span>
           Prompt Playground
         </h4>
-
-        {/* Favorites Section */}
-        <div className="mb-6">
-          <h5 className="font-medium text-sm mb-3">Favorites</h5>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {getFavoriteModels().map((model) => (
-              <ModelCard
-                key={model.id}
-                modelId={model.id}
-                onClick={handleModelSelect}
-                isSelected={testingModel === model.id}
-                isFavorite={true}
-                onFavoriteToggle={handleModelFavoriteToggle}
-              />
-            ))}
-          </div>
-        </div>
 
         {/* Search and Filters */}
         <div className="mb-6">
@@ -461,7 +439,7 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => {
 
         {/* Model Selection Grid */}
         <div className="mb-6">
-          <h5 className="font-medium text-sm mb-3">All Models</h5>
+          <h5 className="font-medium text-sm mb-3">Select a Model</h5>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {filteredModels.map((model) => (
               <ModelCard
@@ -469,7 +447,7 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => {
                 modelId={model.id}
                 onClick={handleModelSelect}
                 isSelected={testingModel === model.id}
-                isFavorite={favorites.has(model.id)}
+                isFavorite={selectedModels.includes(model.id)}
                 onFavoriteToggle={handleModelFavoriteToggle}
               />
             ))}

@@ -1,11 +1,29 @@
 const express = require('express');
+const path = require('path');
 // This line requires the db.js file - check this path!
 const connectDB = require('./config/db'); // <-- Potential issue here
 const promptRoutes = require('./routes/prompts'); // Import prompt routes
 const testRoutes = require('./routes/test'); // Import test routes
 const authRoutes = require('./routes/auth'); // Import auth routes
 const cors = require('cors'); // Import CORS middleware to allow cross-origin requests
-require('dotenv').config({ path: '../.env' }); // Load environment variables from .env in the parent directory
+
+// Load environment variables from .env file
+// Try multiple paths to support both local and Docker environments
+const envPaths = [
+  path.resolve(__dirname, '../.env'),      // Parent directory (local development)
+  path.resolve(__dirname, './.env'),       // Current directory (Docker)
+  path.resolve(process.cwd(), '.env'),     // Working directory
+];
+
+for (const envPath of envPaths) {
+  try {
+    require('dotenv').config({ path: envPath });
+    console.log(`✓ Loaded environment from: ${envPath}`);
+    break;
+  } catch (err) {
+    // Continue to next path if file doesn't exist
+  }
+}
 
 const app = express(); // Create an Express application instance
 
