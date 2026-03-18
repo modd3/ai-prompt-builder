@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import TestResultsDisplay from './TestResultsDisplay';
 import { useAuth } from '../context/AuthContext'; // Import useAuth hook
+import { getModelById, getFreeModels } from '../config/models'; // Import model configuration
 
 // Component for the "Test Your Prompts" section
 // Accepts an initialPrompt object when a user clicks "Try It" on a card,
@@ -14,7 +15,7 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => {
     // State for the actual prompt content being tested (can be from saved or manually entered)
     const [currentPromptContent, setCurrentPromptContent] = useState('');
     // State for the selected LLM model for testing (primary test)
-    const [testingModel, setTestingModel] = useState('ChatGPT (GPT-4)'); // Default testing model
+    const [testingModel, setTestingModel] = useState(''); // Default testing model (will be set to first free model)
     // State to manage input variables extracted from the prompt content
     const [variables, setVariables] = useState({}); // Format: { variableName: 'currentValue' }
     // State to hold the results received from the backend for the primary test
@@ -28,11 +29,31 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => {
     // Object structure: { modelName: { response: '...', responseTime: '...', loading: false, error: null } }
     const [comparisonResults, setComparisonResults] = useState({});
 
+    // State for custom parameters (temperature, maxTokens, etc.)
+    const [customParams, setCustomParams] = useState({}); // Format: { temperature: 0.7, maxTokens: 4000 }
+
+    // Get all free models for selection
+    const freeModels = getFreeModels();
+
     // Define the list of models available for testing/comparison
-    // Ensure these match the cases handled in your backend test route
-    // Use base names for the select dropdown, but base names for API calls
-    const availableModels = ['ChatGPT', 'Claude', 'Gemini', 'HuggingFace']; // Base names for API calls
-    const availableModelOptions = ['ChatGPT (GPT-4)', 'ChatGPT (GPT-3.5)', 'Claude', 'Gemini', 'HuggingFace']; // Display names for select
+    // Use model IDs from configuration for API calls
+    const availableModels = freeModels.map(model => model.id); // Model IDs for API calls
+    const availableModelOptions = freeModels.map(model => ({
+      id: model.id,
+      name: model.name,
+      description: model.description,
+      provider: model.provider,
+      speed: model.speed,
+      context: model.context
+    })); // Display names and metadata for select
+
+    // Effect hook to set default model to first free model
+    useEffect(() => {
+      if (freeModels.length > 0 && !testingModel) {
+        setTestingModel(freeModels[0].id); // Set default to first free model
+        setCustomParams(freeModels[0].defaultParams); // Set default params
+      }
+    }, [freeModels, testingModel]);
 
 
     // Effect hook to fetch saved prompts when the component mounts or initialPrompt changes
@@ -136,36 +157,60 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => {
         return processedContent;
     };
 
+    // Handle changes in custom parameters
+    const handleParamChange = (paramName, value) => {
+         setCustomParams(prevParams => ({
+             ...prevParams,
+             [paramName]: value,
+         }));
+    };
+
+    // Get model configuration by ID
+    const getModelConfig = (modelId) => {
+      return getModelById(modelId);
+    };
+
     // Function to run a single test against a specific model
-    const runTestForModel = async (modelName, contentToTest) => {
+    const runTestForModel = async (modelId, contentToTest) => {
         const testData = {
             promptContent: contentToTest,
-            targetModel: modelName,
-            variables: variables,
+            modelId, // Use modelId instead of targetModel
+            customParams, // Include custom parameters
+            variables
         };
 
         try {
-            // IMPORTANT: Replace "/test-prompt" with your actual backend endpoint for running tests
             const response = await fetch(process.env.REACT_APP_FRONTEND_API_URL + "api/test-prompt", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                     // Add authentication headers here too if needed for this endpoint
                 },
                 body: JSON.stringify(testData),
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.msg || `Failed to run test for ${modelName}`);
+                throw new Error(errorData.msg || `Failed to run test for ${modelId}`);
             }
 
             const result = await response.json();
-            return { model: modelName, response: result.response, responseTime: result.responseTime, loading: false, error: null };
+            return { 
+                model: result.model, // Use actual model name from response
+                response: result.response, 
+                responseTime: result.responseTime, 
+                loading: false, 
+                error: null 
+            };
 
         } catch (error) {
-            console.error(`Error running test for ${modelName}:`, error);
-            return { model: modelName, response: null, responseTime: null, loading: false, error: error.message };
+            console.error(`Error running test for ${modelId}:`, error);
+            return { 
+                model: getModelConfig(modelId)?.name || modelId, 
+                response: null, 
+                responseTime: null, 
+                loading: false, 
+                error: error.message 
+            };
         }
     };
 
@@ -184,16 +229,14 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => {
              return;
         }
 
-        const primaryModelName = testingModel.split(' ')[0];
-
-        const primaryResult = await runTestForModel(primaryModelName, finalPromptContent);
+        const primaryResult = await runTestForModel(testingModel, finalPromptContent);
 
         setTestResults(primaryResult);
         setLoading(false);
     };
 
     // New handler to run a test for a single comparison model
-    const handleRunSingleComparisonTest = async (modelName) => {
+    const handleRunSingleComparisonTest = async (modelId) => {
          const finalPromptContent = injectVariables(currentPromptContent, variables);
          if (!finalPromptContent) {
              console.warn("No prompt content to run comparison tests.");
@@ -202,14 +245,14 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => {
 
          setComparisonResults(prevResults => ({
              ...prevResults,
-             [modelName]: { ...prevResults[modelName], loading: true, error: null }
+             [modelId]: { ...prevResults[modelId], loading: true, error: null }
          }));
 
-         const result = await runTestForModel(modelName, finalPromptContent);
+         const result = await runTestForModel(modelId, finalPromptContent);
 
          setComparisonResults(prevResults => ({
              ...prevResults,
-             [modelName]: result,
+             [modelId]: result,
          }));
     };
 
@@ -278,9 +321,43 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => {
                        onChange={(e) => setTestingModel(e.target.value)}
                     >
                         {availableModelOptions.map(modelOption => (
-                             <option key={modelOption} value={modelOption}>{modelOption}</option>
+                             <option key={modelOption.id} value={modelOption.id}>
+                               {modelOption.name} ({modelOption.provider})
+                               {modelOption.speed && <span className="text-xs text-gray-500"> - {modelOption.speed}</span>}
+                             </option>
                          ))}
                     </select>
+                </div>
+
+                {/* Custom Parameters Section */}
+                <div className="mb-4">
+                    <label className="block text-gray-700 mb-2 text-sm">Custom Parameters</label>
+                    <div className="grid grid-cols-2 gap-2">
+                        <div className="flex items-center gap-2">
+                            <label className="text-sm">Temperature:</label>
+                            <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.1"
+                                value={customParams.temperature || 0.7}
+                                onChange={(e) => handleParamChange('temperature', parseFloat(e.target.value))}
+                                className="w-full"
+                            />
+                            <span className="text-xs text-gray-500">{customParams.temperature || 0.7}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <label className="text-sm">Max Tokens:</label>
+                            <input
+                                type="number"
+                                min="100"
+                                max="8000"
+                                value={customParams.maxTokens || 4000}
+                                onChange={(e) => handleParamChange('maxTokens', parseInt(e.target.value))}
+                                className="w-20 text-sm"
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 {/* Variable Inputs - Dynamically generated based on extracted variables */}
@@ -300,6 +377,18 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => {
                             />
                         ))}
                     </div>
+                )}
+
+                {/* Model Info Section */}
+                {testingModel && (
+                  <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                    <h5 className="font-medium text-sm mb-2">Model Info</h5>
+                    <div className="text-xs text-gray-600 space-y-1">
+                      <div>Provider: {getModelConfig(testingModel)?.provider}</div>
+                      <div>Context: {getModelConfig(testingModel)?.context || 'Medium'}</div>
+                      <div>Speed: {getModelConfig(testingModel)?.speed || 'Medium'}</div>
+                    </div>
+                  </div>
                 )}
 
                 {/* Run Test Button */}
@@ -335,7 +424,7 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => {
                 onEditPrompt={handleEditPrompt}
                 onRunSingleComparisonTest={handleRunSingleComparisonTest}
                 availableModels={availableModels}
-                primaryTestingModel={testingModel.split(' ')[0]}
+                primaryTestingModel={testingModel}
             />
         </div>
     );

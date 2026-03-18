@@ -1,23 +1,42 @@
 const { HfInference } = require('@huggingface/inference');
 require('dotenv').config();
+const { getModelById } = require('../config/models');
 
 // Initialize Hugging Face Inference API
 const hf = new HfInference(process.env.HUGGINGFACE_TOKEN);
 
-const generateResponse = async (prompt) => {
+/**
+ * Generate response using Hugging Face model with custom parameters
+ * @param {string} modelId - Model ID from configuration
+ * @param {string} prompt - Prompt content
+ * @param {object} customParams - Custom parameters (temperature, maxTokens, etc.)
+ * @returns {Promise<string>} - Generated response
+ */
+const generateResponse = async (modelId, prompt, customParams = {}) => {
     try {
+        // Get model configuration
+        const modelConfig = getModelById(modelId);
+        if (!modelConfig || modelConfig.provider !== 'huggingface') {
+            throw new Error(`Invalid model ID: ${modelId}`);
+        }
+
+        // Merge default and custom parameters
+        const params = {
+            ...modelConfig.defaultParams,
+            ...customParams,
+            max_new_tokens: customParams.maxTokens || modelConfig.defaultParams.maxTokens
+        };
+
         const response = await hf.textGeneration({
-            model: "mistralai/Mistral-7B-Instruct-v0.3", // Replace with your chosen model
+            model: modelConfig.model,
             inputs: prompt,
-            parameters: {
-                max_new_tokens: 300, // Limit the response length
-                temperature: 0.7, // Adjust creativity
-            },
-        }, );
+            parameters: params
+        });
+
         return response.generated_text;
     } catch (error) {
         console.error("Error interacting with Hugging Face:", error.message);
-        throw new Error("Failed to generate response from Hugging Face: " + error.message);
+        throw new Error(`Failed to generate response from Hugging Face: ${error.message}`);
     }
 };
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'; // Import useEffect
+import { getModelById } from '../config/models'; // Import model configuration
 
 // Component to display the results of a prompt test
 // Accepts the primary test result, loading state, and optionally comparison results
@@ -14,7 +15,7 @@ const TestResultsDisplay = ({
     primaryTestingModel // The model used for the primary test
 }) => {
     // State to track which comparison result is currently being viewed in the main display area
-    const [viewingComparison, setViewingComparison] = useState(null); // Null, or the model name (e.g., 'Claude')
+    const [viewingComparison, setViewingComparison] = useState(null); // Null, or the model ID (e.g., 'groq_llamaInstant')
 
     // Reset viewingComparison state when the primary results change or loading starts
     useEffect(() => {
@@ -66,9 +67,9 @@ const TestResultsDisplay = ({
     };
 
     // Handle clicking a comparison model button (either to run test or view result)
-    const handleModelButtonClick = (modelName) => {
+    const handleModelButtonClick = (modelId) => {
         // Safely get the comparison result for the clicked model
-        const compResult = comparisonResults[modelName];
+        const compResult = comparisonResults[modelId];
 
         // Determine if the test has been run and has a result
         const hasResult = compResult?.response !== null && compResult?.response !== undefined;
@@ -76,18 +77,18 @@ const TestResultsDisplay = ({
         // If the test hasn't been run or had an error, run it
         if (!compResult || compResult.error || !hasResult) {
              if (onRunSingleComparisonTest) {
-                 onRunSingleComparisonTest(modelName); // Call the handler to run the test for this model
+                 onRunSingleComparisonTest(modelId); // Call the handler to run the test for this model
                  // Do NOT set viewingComparison here, keep showing primary result
              }
         } else {
             // If the test has already been run and has a result, set to view the full result
-            setViewingComparison(modelName);
+            setViewingComparison(modelId);
         }
     };
 
     // Handle clicking the "Read More" link on a snippet
-    const handleReadMoreClick = (modelName) => {
-        setViewingComparison(modelName); // Set to view the full result for this model
+    const handleReadMoreClick = (modelId) => {
+        setViewingComparison(modelId); // Set to view the full result for this model
     };
 
     // Handle clicking the "Back to Primary Result" button
@@ -104,25 +105,9 @@ const TestResultsDisplay = ({
     const displayedLoading = viewingComparison ? comparisonResults[viewingComparison]?.loading : loading;
 
 
-    // Helper function to determine model icon and color
-    const getModelDisplayInfo = (modelName) => {
-        const icon =
-            modelName === 'ChatGPT' ? 'smart_toy' :
-            modelName === 'Midjourney' ? 'magic_button' :
-            modelName === 'Claude' ? 'table_chart' :
-            modelName === 'Gemini' ? 'globe' :
-            modelName === 'HuggingFace' ? 'psychology' :
-            'psychology'; // Default icon
-
-        const colorClass =
-            modelName === 'ChatGPT' ? 'bg-blue-100 text-blue-600' :
-            modelName === 'Midjourney' ? 'bg-purple-100 text-purple-600' :
-            modelName === 'Claude' ? 'bg-red-100 text-red-600' :
-            modelName === 'Gemini' ? 'bg-green-100 text-green-600' :
-            modelName === 'HuggingFace' ? 'bg-indigo-100 text-indigo-600' :
-            'bg-gray-200 text-gray-700'; // Default color
-
-        return { icon, colorClass };
+    // Helper function to get model information by ID
+    const getModelInfo = (modelId) => {
+      return getModelById(modelId);
     };
 
     // Function to get a snippet of the response
@@ -255,27 +240,29 @@ const TestResultsDisplay = ({
                                   <div className="grid grid-cols-2 gap-3">
                                        {/* Map over available models to create individual buttons */}
                                        {availableModels
-                                            .filter(modelName => modelName !== primaryTestingModel) // Exclude the primary model
-                                            .map(modelName => {
+                                            .filter(modelId => modelId !== primaryTestingModel) // Exclude the primary model
+                                            .map(modelId => {
                                                 // Safely access compResult, defaulting to an empty object if undefined
-                                                const compResult = comparisonResults[modelName] || {};
+                                                const compResult = comparisonResults[modelId] || {};
                                                 // Use optional chaining for safer access
                                                 const isLoading = compResult?.loading || false;
                                                 const hasResult = compResult?.response !== null && compResult?.response !== undefined; // Use optional chaining here too
 
                                                 return (
                                                     <button
-                                                         key={modelName}
+                                                         key={modelId}
                                                          className="p-3 bg-white rounded-lg border border-gray-200 cursor-pointer hover:shadow-md transition-all text-left flex flex-col gap-2 disabled:opacity-50 disabled:cursor-not-allowed" // Added flex-col and gap-2
-                                                         onClick={() => handleModelButtonClick(modelName)} // Use the new handler
+                                                         onClick={() => handleModelButtonClick(modelId)} // Use the new handler
                                                          disabled={isLoading || loading} // Disable while this comparison is loading OR primary test is loading
                                                     >
                                                         <div className="flex items-center gap-1"> {/* Adjusted flex items */}
                                                             {/* Model Icon */}
-                                                            <div className={`w-6 h-6 rounded-full flex items-center justify-center ${getModelDisplayInfo(modelName).colorClass}`}> {/* Use helper function */}
-                                                                <span className="material-symbols-outlined text-xs">{getModelDisplayInfo(modelName).icon}</span> {/* Use helper function */}
+                                                            <div className={`w-6 h-6 rounded-full flex items-center justify-center bg-gray-200 text-gray-600`}>
+                                                                <span className="material-symbols-outlined text-xs">
+                                                                    {getModelInfo(modelId)?.icon || 'psychology'}
+                                                                </span>
                                                             </div>
-                                                            <span className="text-xs font-medium">{modelName}</span>
+                                                            <span className="text-xs font-medium">{getModelInfo(modelId)?.name || modelId}</span>
                                                              {/* Loading indicator for individual comparison */}
                                                              {isLoading && (
                                                                  <span className="material-symbols-outlined animate-spin text-xs ml-auto text-gray-500">
@@ -286,27 +273,27 @@ const TestResultsDisplay = ({
                                                         {/* Display status or preview */}
                                                         {isLoading ? (
                                                              <p className="text-xs text-gray-500 italic">Running test...</p>
-                                                        ) : compResult?.error ? ( // Use optional chaining here
+                                                        ) : compResult?.error ? (
                                                              <p className="text-xs text-red-600">Error: {compResult.error}</p>
-                                                        ) : hasResult ? ( // Show snippet and Read More if result exists
+                                                        ) : hasResult ? (
                                                             <>
                                                                 <p className="text-xs text-gray-500 italic line-clamp-2">
                                                                     {getResponseSnippet(compResult.response, 70)} {/* Show snippet */}
                                                                 </p>
                                                                 {/* Read More link - Triggers viewing the full result */}
-                                                                {compResult.response.length > 100 && ( // Only show if response is longer than snippet length
+                                                                {compResult.response.length > 100 && (
                                                                      <button
                                                                           className="text-xs text-primary-600 hover:text-primary-800 font-medium self-start" // self-start aligns to the left
                                                                           onClick={(e) => {
                                                                                e.stopPropagation(); // Prevent the button's parent onClick from firing
-                                                                               handleReadMoreClick(modelName); // Call handler to view full result
+                                                                               handleReadMoreClick(modelId); // Call handler to view full result
                                                                           }}
                                                                      >
                                                                           Read More
                                                                      </button>
                                                                 )}
                                                             </>
-                                                        ) : ( // Show click to run if no result, no loading, no error
+                                                        ) : (
                                                             <p className="text-xs text-gray-500 italic">
                                                                 Click to run test
                                                             </p>
