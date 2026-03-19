@@ -242,7 +242,8 @@ const HomePage = () => {
                 }
 
                 const data = await response.json();
-                setUserPrompts(data.prompts);
+                const normalizedPrompts = Array.isArray(data) ? data : (data?.prompts || []);
+                setUserPrompts(normalizedPrompts);
 
             } catch (error) {
                 console.error('Error fetching user prompts:', error);
