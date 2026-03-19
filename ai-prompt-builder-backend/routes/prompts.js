@@ -10,7 +10,10 @@ const {
     editPrompt,
     deletePrompt, // Placeholder for delete controller
     ratePrompt,   // Placeholder for rate controller
-    bookmarkPrompt // Placeholder for bookmark controller
+    bookmarkPrompt, // Placeholder for bookmark controller
+    votePrompt,
+    getPromptComments,
+    createPromptComment
 } = require('../controllers/promptController');
 // Import the authentication middleware
 const authMiddleware = require('../middleware/auth');
@@ -72,6 +75,21 @@ router.post('/:id/rate', authMiddleware, ratePrompt); // Added POST route for ra
 // @access  Private (requires authentication)
 // Protected with authMiddleware. Logic for bookmarking needed in controller.
 router.post('/:id/bookmark', authMiddleware, bookmarkPrompt); // Added POST route for bookmarking
+
+// @route   POST /api/prompts/:id/vote
+// @desc    Upvote/downvote/toggle vote for a prompt
+// @access  Private
+router.post('/:id/vote', authMiddleware, votePrompt);
+
+// @route   GET /api/prompts/:id/comments
+// @desc    Fetch comments for a prompt
+// @access  Public
+router.get('/:id/comments', getPromptComments);
+
+// @route   POST /api/prompts/:id/comments
+// @desc    Add a comment to a prompt
+// @access  Private
+router.post('/:id/comments', authMiddleware, createPromptComment);
 
 // TODO: Add routes for getting a user's bookmarked prompts, prompts created by a user, etc.
 
