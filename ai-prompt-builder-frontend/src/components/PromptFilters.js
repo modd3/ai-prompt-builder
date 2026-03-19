@@ -66,6 +66,9 @@ const PromptFilters = ({ onFilterChange, onSortChange }) => {
         } else if (value === 'Most Popular') {
             newSortBy = 'views';
             newSortOrder = 'desc';
+        } else if (value === 'Most Discussed') {
+            newSortBy = 'comments';
+            newSortOrder = 'desc';
         }
 
         setSortBy(newSortBy);
@@ -128,7 +131,9 @@ const PromptFilters = ({ onFilterChange, onSortChange }) => {
                     value={
                          sortBy === 'created_at' && sortOrder === 'asc' ? 'Oldest' :
                          sortBy === 'created_at' && sortOrder === 'desc' ? 'Newest' :
+                         sortBy === 'hot' ? 'Trending' :
                          sortBy === 'rating' ? 'Highest Rated' :
+                         sortBy === 'comments' ? 'Most Discussed' :
                          sortBy === 'views' ? 'Most Popular' :
                          'Newest'
                     }

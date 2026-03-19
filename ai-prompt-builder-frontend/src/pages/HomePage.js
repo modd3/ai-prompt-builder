@@ -32,6 +32,7 @@ const HomePage = () => {
     const [mostViewedPrompts, setMostViewedPrompts] = useState([]); // State for Most Viewed prompts
     // State to hold the list of prompts for the trending section (Top Rated)
     const [topRatedPrompts, setTopRatedPrompts] = useState([]); // State for Top Rated prompts
+    const [hotPrompts, setHotPrompts] = useState([]); // State for Hot/Trending prompts
     // State to hold prompts created by the logged-in user for their profile page
     const [userPrompts, setUserPrompts] = useState([]); // New state for user's prompts
 
@@ -41,6 +42,7 @@ const HomePage = () => {
     const [loadingMostViewed, setLoadingMostViewed] = useState(true); // Loading state for Most Viewed
     // State to manage loading status while fetching Top Rated trending prompts
     const [loadingTopRated, setLoadingTopRated] = useState(true); // Loading state for Top Rated
+    const [loadingHotPrompts, setLoadingHotPrompts] = useState(true);
     // State to manage loading status while fetching user's prompts
     const [loadingUserPrompts, setLoadingUserPrompts] = useState(true); // New loading state
 
@@ -151,7 +153,29 @@ const HomePage = () => {
         const fetchTrendingPrompts = async () => {
             setLoadingMostViewed(true); // Set loading state for Most Viewed
             setLoadingTopRated(true); // Set loading state for Top Rated
+            setLoadingHotPrompts(true); // Set loading state for Hot prompts
             // setFetchError(null); // Decide if you want to clear error here or manage separate errors
+
+            const fetchHotPrompts = async () => {
+                const queryParams = new URLSearchParams();
+                queryParams.append('sort', 'trending');
+                queryParams.append('limit', 6);
+                queryParams.append('isPublic', true);
+                try {
+                    const response = await fetch(`${BACKEND_BASE_URL}/api/prompts?${queryParams.toString()}`);
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to fetch trending prompts');
+                    }
+                    const data = await response.json();
+                    setHotPrompts(data.prompts);
+                } catch (error) {
+                    console.error('Error fetching hot prompts:', error);
+                    setFetchError(`Failed to load trending prompts: ${error.message || 'Network error'}`);
+                } finally {
+                    setLoadingHotPrompts(false);
+                }
+            };
 
             // Fetch Most Viewed Prompts
             const fetchMostViewed = async () => {
@@ -201,7 +225,8 @@ const HomePage = () => {
                 }
             };
 
-            // Execute both fetch calls concurrently
+            // Execute all fetch calls concurrently
+            fetchHotPrompts();
             fetchMostViewed();
             fetchTopRated();
         };
@@ -605,6 +630,26 @@ const HomePage = () => {
                             <section className="mb-12">
                                 {/* Main Trending section title */}
                                 <h3 className="text-2xl font-bold mb-6">Trending Prompts</h3>
+
+                                 {/* Hot/Trending Prompts Sub-section */}
+                                 <p className="text-sm text-muted-foreground mb-6"><span className="text-primary-600 font-medium">Hot Right Now</span></p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                                    {(loadingHotPrompts && !fetchError) && <p>Loading hot prompts...</p>}
+                                    {fetchError && !loadingHotPrompts && <p className="text-red-600">Error loading hot prompts: {fetchError}</p>}
+                                    {!loadingHotPrompts && !fetchError && hotPrompts.length === 0 && (
+                                        <p>No hot prompts found.</p>
+                                    )}
+                                    {!loadingHotPrompts && !fetchError && hotPrompts.length > 0 && hotPrompts.map(prompt => (
+                                        <PromptCard
+                                            key={prompt._id}
+                                            prompt={prompt}
+                                            onTryItClick={handleTryItClick}
+                                            onRatePrompt={handleRatePrompt}
+                                            onVotePrompt={handleVotePrompt}
+                                            trendingType="hot"
+                                        />
+                                    ))}
+                                </div>
 
                                  {/* Most Viewed Prompts Sub-section */}
                                  <p className="text-sm text-muted-foreground mb-6"><span className="text-primary-600 font-medium">Most Viewed</span></p>
