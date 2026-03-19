@@ -1,7 +1,7 @@
 import React from 'react';
 import PromptCard from './PromptCard'; // Import PromptCard to display user's prompts
 
-const ProfilePage = ({ user, userPrompts, loadingUserPrompts, fetchError, onTryItClick, onRatePrompt, onCreatePromptClick }) => {
+const ProfilePage = ({ user, userPrompts, loadingUserPrompts, fetchError, onTryItClick, onRatePrompt, onCreatePromptClick, onVotePrompt }) => {
     const safeUserPrompts = Array.isArray(userPrompts) ? userPrompts : [];
 
     if (!user) {
@@ -71,6 +71,7 @@ const ProfilePage = ({ user, userPrompts, loadingUserPrompts, fetchError, onTryI
                         prompt={prompt}
                         onTryItClick={onTryItClick}
                         onRatePrompt={onRatePrompt}
+                        onVotePrompt={onVotePrompt}
                     />
                 ))}
             </div>

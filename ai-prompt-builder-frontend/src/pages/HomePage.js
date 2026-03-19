@@ -323,6 +323,55 @@ const HomePage = () => {
     };
 
 
+
+
+    const handleVotePrompt = async (promptId, value) => {
+        if (!isAuthenticated || !token) {
+            return Promise.reject(new Error('Authentication required to vote.'));
+        }
+
+        try {
+            const response = await fetch(`${BACKEND_BASE_URL}/api/prompts/${promptId}/vote`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({ value }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.msg || 'Failed to submit vote');
+            }
+
+            const voteData = await response.json();
+
+            const applyVoteUpdate = (list) =>
+                list.map((prompt) =>
+                    prompt._id === promptId
+                        ? {
+                              ...prompt,
+                              upvotes: voteData.upvotes,
+                              downvotes: voteData.downvotes,
+                              commentCount: voteData.commentCount,
+                              hotScore: voteData.hotScore,
+                          }
+                        : prompt
+                );
+
+            setPrompts((prev) => applyVoteUpdate(prev));
+            setMostViewedPrompts((prev) => applyVoteUpdate(prev));
+            setTopRatedPrompts((prev) => applyVoteUpdate(prev));
+            setUserPrompts((prev) => applyVoteUpdate(prev));
+
+            return voteData;
+        } catch (error) {
+            console.error('Error voting prompt:', error);
+            throw error;
+        }
+    };
+
     // Handler for filter changes from PromptFilters component
     const handleFilterChange = (newFilters) => {
         setFilters(prevFilters => ({ ...prevFilters, ...newFilters }));
@@ -571,6 +620,7 @@ const HomePage = () => {
                                             prompt={prompt}
                                             onTryItClick={handleTryItClick} // Pass handler to PromptCard
                                             onRatePrompt={handleRatePrompt} // Pass the new rating handler
+                                            onVotePrompt={handleVotePrompt}
                                             trendingType="most-viewed" // Indicate this is a most viewed prompt
                                         />
                                     ))}
@@ -590,6 +640,7 @@ const HomePage = () => {
                                             prompt={prompt}
                                             onTryItClick={handleTryItClick} // Pass handler to PromptCard
                                             onRatePrompt={handleRatePrompt} // Pass the new rating handler
+                                            onVotePrompt={handleVotePrompt}
                                             trendingType="top-rated" // Indicate this is a top rated prompt
                                         />
                                     ))}
@@ -617,6 +668,7 @@ const HomePage = () => {
                                             prompt={prompt}
                                             onTryItClick={handleTryItClick} // Pass handler to PromptCard
                                             onRatePrompt={handleRatePrompt} // Pass the new rating handler
+                                            onVotePrompt={handleVotePrompt}
                                             // No trendingType prop for the main explore list
                                         />
                                     ))}
@@ -672,7 +724,8 @@ const HomePage = () => {
                                 fetchError={fetchError} // Pass error state for user prompts
                                 onTryItClick={handleTryItClick}
                                 onRatePrompt={handleRatePrompt}
-                                onCreatePromptClick={handleCreatePromptClick} // For "Create New Prompt" button
+                                onCreatePromptClick={handleCreatePromptClick}
+                                onVotePrompt={handleVotePrompt} // For "Create New Prompt" button
                             />
                         </section>
                     )}
