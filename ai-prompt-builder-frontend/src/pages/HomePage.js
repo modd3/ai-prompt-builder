@@ -242,7 +242,8 @@ const HomePage = () => {
                 }
 
                 const data = await response.json();
-                setUserPrompts(data.prompts);
+                const normalizedPrompts = Array.isArray(data) ? data : (data?.prompts || []);
+                setUserPrompts(normalizedPrompts);
 
             } catch (error) {
                 console.error('Error fetching user prompts:', error);
@@ -536,7 +537,7 @@ const HomePage = () => {
             {/* Removed max-w-screen-xl and mx-auto from this div */}
             {/* Padding (p-4 md:p-6) remains for spacing on different screen sizes */}
             {/* Removed fixed width and mx-auto here to allow content to be fully responsive */}
-            <div className="p-4 md:p-6 bg-gradient-to-br from-white to-gray-50 font-sans">
+            <div className="p-4 md:p-6 surface-gradient font-sans">
 
                 <main>
                     {/* Hero Section is typically only on the home page */}
@@ -557,7 +558,7 @@ const HomePage = () => {
                                 <h3 className="text-2xl font-bold mb-6">Trending Prompts</h3>
 
                                  {/* Most Viewed Prompts Sub-section */}
-                                 <p className="text-sm text-gray-600 mb-6"><span className="text-primary-600 font-medium">Most Viewed</span></p>
+                                 <p className="text-sm text-muted-foreground mb-6"><span className="text-primary-600 font-medium">Most Viewed</span></p>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"> {/* Added mb-8 for spacing between lists */}
                                     {(loadingMostViewed && !fetchError) && <p>Loading most viewed prompts...</p>}
                                     {fetchError && !loadingMostViewed && <p className="text-red-600">Error loading most viewed prompts: {fetchError}</p>}
@@ -576,7 +577,7 @@ const HomePage = () => {
                                 </div>
 
                                  {/* Top Rated Prompts Sub-section */}
-                                 <p className="text-sm text-gray-600 mb-6"><span className="text-primary-600 font-medium">Top-Rated</span></p>
+                                 <p className="text-sm text-muted-foreground mb-6"><span className="text-primary-600 font-medium">Top-Rated</span></p>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"> {/* No mb-8 on the last grid */}
                                     {(loadingTopRated && !fetchError) && <p>Loading top rated prompts...</p>}
                                     {fetchError && !loadingTopRated && <p className="text-red-600">Error loading top rated prompts: {fetchError}</p>}
@@ -639,7 +640,7 @@ const HomePage = () => {
                                      />
                                 ) : (
                                      // Optional: Show a message or redirect if not authenticated
-                                     <div className="text-center text-gray-600">
+                                     <div className="text-center text-muted-foreground">
                                          Please log in to create or edit prompts.
                                      </div>
                                 )}
@@ -681,7 +682,7 @@ const HomePage = () => {
                         <>
                             <section className="mb-12">
                                 <LoginForm onLoginSuccess={handleAuthSuccess} />
-                                <p className="text-center text-gray-600 text-sm mt-4">
+                                <p className="text-center text-muted-foreground text-sm mt-4">
                                     Don't have an account? <button type="button" className="text-primary-600 hover:underline" onClick={handleGoToRegister}>Register</button>
                                 </p>
                             </section>
@@ -692,7 +693,7 @@ const HomePage = () => {
                         <>
                             <section className="mb-12">
                                 <RegisterForm onRegisterSuccess={handleAuthSuccess} />
-                                <p className="text-center text-gray-600 text-sm mt-4">
+                                <p className="text-center text-muted-foreground text-sm mt-4">
                                     Already have an account? <button type="button" className="text-primary-600 hover:underline" onClick={handleGoToLogin}>Login</button>
                                 </p>
                             </section>
@@ -704,67 +705,67 @@ const HomePage = () => {
                         <section className="mb-12">
                             <h3 className="text-2xl font-bold mb-6">Features</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                <div className="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-all border border-gray-100 hover:-translate-y-1">
+                                <div className="bg-card rounded-lg p-6 shadow-md hover:shadow-lg transition-all border border-border hover:-translate-y-1">
                                     <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
                                         <span className="material-symbols-outlined text-blue-600">edit_document</span>
                                     </div>
                                     <h4 className="font-bold text-xl mb-2">Create</h4>
-                                    <p className="text-gray-600">
+                                    <p className="text-muted-foreground">
                                         Design powerful prompts with our intuitive editor. Add variables, formatting, and
                                         structure for consistent results.
                                     </p>
                                 </div>
 
-                                <div className="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-all border border-gray-100 hover:-translate-y-1">
+                                <div className="bg-card rounded-lg p-6 shadow-md hover:shadow-lg transition-all border border-border hover:-translate-y-1">
                                     <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
                                         <span className="material-symbols-outlined text-green-600">share</span>
                                     </div>
                                     <h4 className="font-bold text-xl mb-2">Share</h4>
-                                    <p className="text-gray-600">
+                                    <p className="text-muted-foreground">
                                         Publish your prompts to the community or keep them private. Collaborate with others
                                         to improve and iterate.
                                     </p>
                                 </div>
 
-                                <div className="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-all border border-gray-100 hover:-translate-y-1">
+                                <div className="bg-card rounded-lg p-6 shadow-md hover:shadow-lg transition-all border border-border hover:-translate-y-1">
                                     <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
                                         <span className="material-symbols-outlined text-purple-600">science</span>
                                     </div>
                                     <h4 className="font-bold text-xl mb-2">Test</h4>
-                                    <p className="text-gray-600">
+                                    <p className="text-muted-foreground">
                                         Try your prompts across different AI models. Analyze performance and refine for
                                         optimal results.
                                     </p>
                                 </div>
 
-                                <div className="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-all border border-gray-100 hover:-translate-y-1">
+                                <div className="bg-card rounded-lg p-6 shadow-md hover:shadow-lg transition-all border border-border hover:-translate-y-1">
                                     <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
                                         <span className="material-symbols-outlined text-yellow-600">insights</span>
                                     </div>
                                     <h4 className="font-bold text-xl mb-2">Analyze</h4>
-                                    <p className="text-gray-600">
+                                    <p className="text-muted-foreground">
                                         Get detailed analytics on your prompts. See how they perform and how users engage
                                         with them.
                                     </p>
                                 </div>
 
-                                <div className="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-all border border-gray-100 hover:-translate-y-1">
+                                <div className="bg-card rounded-lg p-6 shadow-md hover:shadow-lg transition-all border border-border hover:-translate-y-1">
                                     <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
                                         <span className="material-symbols-outlined text-red-600">group</span>
                                     </div>
                                     <h4 className="font-bold text-xl mb-2">Community</h4>
-                                    <p className="text-gray-600">
+                                    <p className="text-muted-foreground">
                                         Join a vibrant community of prompt engineers. Learn from experts and contribute your
                                         knowledge.
                                     </p>
                                 </div>
 
-                                <div className="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-all border border-gray-100 hover:-translate-y-1">
+                                <div className="bg-card rounded-lg p-6 shadow-md hover:shadow-lg transition-all border border-border hover:-translate-y-1">
                                     <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
                                         <span className="material-symbols-outlined text-indigo-600">school</span>
                                     </div>
                                     <h4 className="font-bold text-xl mb-2">Learn</h4>
-                                    <p className="text-gray-600">
+                                    <p className="text-muted-foreground">
                                         Access tutorials, guides and best practices on prompt engineering for different AI
                                         models and use cases.
                                     </p>
@@ -780,26 +781,26 @@ const HomePage = () => {
                                 {/* Keep static community section JSX */}
                                 <div className="text-center mb-8">
                                     <h3 className="text-3xl font-bold mb-3">Join Our Community</h3>
-                                    <p className="text-gray-600 max-w-2xl mx-auto">
+                                    <p className="text-muted-foreground max-w-2xl mx-auto">
                                         Connect with thousands of prompt engineers and AI enthusiasts. Share knowledge,
                                         collaborate on projects, and stay updated on the latest LLM developments.
                                     </p>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                                    <div className="bg-white rounded-lg p-6 shadow-sm text-center">
+                                    <div className="bg-card rounded-lg p-6 shadow-sm text-center border border-border">
                                         <div className="text-primary-600 text-3xl font-bold mb-2">10,000+</div>
-                                        <div className="text-gray-600">Active Members</div>
+                                        <div className="text-muted-foreground">Active Members</div>
                                     </div>
 
-                                    <div className="bg-white rounded-lg p-6 shadow-sm text-center">
+                                    <div className="bg-card rounded-lg p-6 shadow-sm text-center border border-border">
                                         <div className="text-primary-600 text-3xl font-bold mb-2">25,000+</div>
-                                        <div className="text-gray-600">Shared Prompts</div>
+                                        <div className="text-muted-foreground">Shared Prompts</div>
                                     </div>
 
-                                    <div className="bg-white rounded-lg p-6 shadow-sm text-center">
+                                    <div className="bg-card rounded-lg p-6 shadow-sm text-center border border-border">
                                         <div className="text-primary-600 text-3xl font-bold mb-2">100,000+</div>
-                                        <div className="text-gray-600">Monthly Tests</div>
+                                        <div className="text-muted-foreground">Monthly Tests</div>
                                     </div>
                                 </div>
 
