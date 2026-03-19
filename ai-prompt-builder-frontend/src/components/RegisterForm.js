@@ -1,173 +1,130 @@
 import React, { useState } from 'react';
+import { Button } from './ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 
-// Component for the user registration form
-// Accepts a handler for successful registration (e.g., to navigate or show a message)
+const BACKEND_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+
 const RegisterForm = ({ onRegisterSuccess }) => {
-    // State for form inputs
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    // State for loading status and messages
-    const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
 
-    // Handle form submission
-    const handleSubmit = async (e) => {
-        e.preventDefault(); // Prevent default browser form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-        // Basic client-side validation
-        if (!name || !email || !password || !confirmPassword) {
-            setMessage('Error: Please fill in all fields.');
-            return;
-        }
-        if (password !== confirmPassword) {
-            setMessage('Error: Passwords do not match.');
-            return;
-        }
-        if (password.length < 6) {
-             setMessage('Error: Password must be at least 6 characters long.');
-             return;
-        }
-        // Basic email format check (can be more robust)
-        if (!/\S+@\S+\.\S+/.test(email)) {
-            setMessage('Error: Please enter a valid email address.');
-            return;
-        }
+    if (!name || !email || !password || !confirmPassword) {
+      setMessage('Error: Please fill in all fields.');
+      return;
+    }
 
+    if (password !== confirmPassword) {
+      setMessage('Error: Passwords do not match.');
+      return;
+    }
 
-        // Set loading state and clear previous messages
-        setLoading(true);
-        setMessage('');
+    setLoading(true);
+    setMessage('');
 
-        try {
-            // Prepare data to send to the backend
-            const userData = {
-                name,
-                email,
-                password,
-            };
+    try {
+      const response = await fetch(`${BACKEND_BASE_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password })
+      });
 
-            // Make the POST request to the backend registration endpoint
-            const response = await fetch(process.env.REACT_APP_FRONTEND_API_URL + '/auth/register', { // Replace with your backend URL
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(userData), // Send user data as JSON
-            });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.msg || 'Registration failed');
+      }
 
-            // Check if the request was successful
-            if (!response.ok) {
-                const errorData = await response.json();
-                // Throw an error with the message from the backend if available
-                throw new Error(errorData.msg || 'Registration failed');
-            }
+      const result = await response.json();
+      setMessage('Registration successful!');
 
-            // Parse the successful response (should contain user data and token)
-            const result = await response.json();
-            setMessage('Registration successful!'); // Set success message
-            console.log('Registered user:', result);
+      onRegisterSuccess?.({
+        user: { _id: result._id, name: result.name, email: result.email },
+        token: result.token
+      });
+    } catch (error) {
+      setMessage(`Error: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-            // TODO: Store the JWT token and user data (e.g., in localStorage or context)
-            // This is handled by the onRegisterSuccess handler in HomePage now
-            // localStorage.setItem('token', result.token);
-            // localStorage.setItem('user', JSON.stringify({ _id: result._id, name: result.name, email: result.email }));
-            // Call the parent handler for successful registration
-            if (onRegisterSuccess) {
-                // Pass the full result object containing user data and token
-                onRegisterSuccess({ user: { _id: result._id, name: result.name, email: result.email }, token: result.token });
-            }
+  return (
+    <Card className="mx-auto max-w-md border-secondary-100/80">
+      <CardHeader>
+        <CardTitle>Create account</CardTitle>
+        <CardDescription>Start building and testing AI prompts in minutes.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-2">
+            <Label htmlFor="register-name">Name</Label>
+            <Input id="register-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Doe" required />
+          </div>
 
-            // Optional: Clear the form after successful registration
-            // setName('');
-            // setEmail('');
-            // setPassword('');
-            // setConfirmPassword('');
+          <div className="space-y-2">
+            <Label htmlFor="register-email">Email</Label>
+            <Input
+              id="register-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+            />
+          </div>
 
-        } catch (error) {
-            // Handle errors during the fetch request or from the backend
-            console.error('Error registering user:', error);
-            setMessage(`Error: ${error.message}`); // Set error message
-        } finally {
-            // Reset loading state
-            setLoading(false);
-        }
-    };
+          <div className="space-y-2">
+            <Label htmlFor="register-password">Password</Label>
+            <Input
+              id="register-password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              minLength={6}
+              placeholder="At least 6 characters"
+              required
+            />
+          </div>
 
-    return (
-        <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 max-w-md mx-auto"> {/* Added max-w-md and mx-auto for centering */}
-            <h3 className="text-2xl font-bold mb-6 text-center">Create Your Account</h3>
-            <form onSubmit={handleSubmit}>
-                <div className="mb-4">
-                    <label className="block text-gray-700 mb-2 font-medium text-sm">Name</label>
-                    <input
-                        type="text"
-                        placeholder="Enter your name"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition text-sm"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                    />
-                </div>
-                <div className="mb-4">
-                    <label className="block text-gray-700 mb-2 font-medium text-sm">Email Address</label>
-                    <input
-                        type="email"
-                        placeholder="Enter your email"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition text-sm"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                    />
-                </div>
-                <div className="mb-4">
-                    <label className="block text-gray-700 mb-2 font-medium text-sm">Password</label>
-                    <input
-                        type="password"
-                        placeholder="Enter your password"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition text-sm"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        minLength="6"
-                    />
-                </div>
-                <div className="mb-6">
-                    <label className="block text-gray-700 mb-2 font-medium text-sm">Confirm Password</label>
-                    <input
-                        type="password"
-                        placeholder="Confirm your password"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition text-sm"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                        minLength="6"
-                    />
-                </div>
-                <button
-                    type="submit"
-                    className="w-full bg-primary-600 text-white py-3 rounded-lg hover:bg-primary-700 transition shadow hover:shadow-md flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={loading} // Disable button while loading
-                >
-                    {loading ? 'Registering...' : 'Register'}
-                </button>
+          <div className="space-y-2">
+            <Label htmlFor="register-confirm-password">Confirm password</Label>
+            <Input
+              id="register-confirm-password"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              minLength={6}
+              required
+            />
+          </div>
 
-                {/* Display messages */}
-                {message && (
-                    <div className={`mt-4 p-3 rounded-lg text-sm text-center ${message.startsWith('Error') ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
-                        {message}
-                    </div>
-                )}
-            </form>
-             {/* Link to login page (if you have one) - this is handled in HomePage now */}
-             {/* <p className="text-center text-gray-600 text-sm mt-4">
-                 Already have an account? <button className="text-primary-600 hover:underline" onClick={onGoToLogin}>Login</button>
-             </p> */}
-        </div>
-    );
+          <Button type="submit" className="w-full bg-secondary-600 hover:bg-secondary-700" disabled={loading}>
+            {loading ? 'Creating account...' : 'Register'}
+          </Button>
+
+          {message && (
+            <p
+              className={`rounded-md border p-3 text-sm ${
+                message.startsWith('Error')
+                  ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300'
+                  : 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300'
+              }`}
+            >
+              {message}
+            </p>
+          )}
+        </form>
+      </CardContent>
+    </Card>
+  );
 };
 
 export default RegisterForm;
-
-// This component can be used in your main application file (e.g., HomePage.js) to handle user registration.

@@ -1,7 +1,35 @@
 const Prompt = require('../models/prompt'); // Ensure correct path to your Prompt model
 const User = require('../models/User'); // Import the User model to update the user's prompts array
+const PromptVote = require('../models/PromptVote');
+const Comment = require('../models/Comment');
 const mongoose = require('mongoose'); // Import mongoose for ObjectId comparison
 
+const calculateHotScore = (prompt) => {
+    const voteScore = (prompt.upvotes || 0) - (prompt.downvotes || 0);
+    const commentBonus = (prompt.commentCount || 0) * 0.5;
+    const viewBonus = Math.log10((prompt.views || 0) + 1) * 0.2;
+    const ageInHours = (Date.now() - new Date(prompt.created_at).getTime()) / 3600000;
+    const timeDecay = ageInHours * 0.08;
+    return Number((voteScore + commentBonus + viewBonus - timeDecay).toFixed(4));
+};
+
+const refreshPromptEngagementStats = async (promptId) => {
+    const [upvotes, downvotes, commentCount] = await Promise.all([
+        PromptVote.countDocuments({ prompt: promptId, value: 1 }),
+        PromptVote.countDocuments({ prompt: promptId, value: -1 }),
+        Comment.countDocuments({ prompt: promptId, isDeleted: false }),
+    ]);
+
+    const prompt = await Prompt.findById(promptId);
+    if (!prompt) return null;
+
+    prompt.upvotes = upvotes;
+    prompt.downvotes = downvotes;
+    prompt.commentCount = commentCount;
+    prompt.hotScore = calculateHotScore(prompt);
+    await prompt.save();
+    return prompt;
+};
 
 // Controller function to get all prompts with optional filtering, sorting, and pagination
 // This function is intended to be used by a GET route, e.g., router.get('/', getPrompts);
@@ -81,6 +109,8 @@ console.log(filter);
             sortOption = { rating: -1 }; // Sort by highest rating
         } else if (sort === 'views') {
              sortOption = { views: -1 }; // Sort by most viewed (trending)
+        } else if (sort === 'hot' || sort === 'trending') {
+            sortOption = { hotScore: -1, created_at: -1 };
         }
         // Add sorting by title if needed, as in the original controller
         else if (sort === 'title_asc') {
@@ -429,6 +459,104 @@ const bookmarkPrompt = async (req, res) => {
     res.status(501).json({ msg: 'Bookmark prompt functionality not yet implemented' }); // 501 Not Implemented
 };
 
+const votePrompt = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { value } = req.body;
+        const userId = req.user.id;
+
+        if (![1, -1].includes(value)) {
+            return res.status(400).json({ msg: 'Vote value must be 1 (upvote) or -1 (downvote).' });
+        }
+
+        const prompt = await Prompt.findById(id);
+        if (!prompt) {
+            return res.status(404).json({ msg: 'Prompt not found' });
+        }
+
+        if (prompt.author.toString() === userId) {
+            return res.status(400).json({ msg: 'You cannot vote on your own prompt.' });
+        }
+
+        const existingVote = await PromptVote.findOne({ prompt: id, user: userId });
+
+        if (!existingVote) {
+            await PromptVote.create({ prompt: id, user: userId, value });
+        } else if (existingVote.value === value) {
+            await existingVote.deleteOne(); // toggle off if same vote
+        } else {
+            existingVote.value = value;
+            await existingVote.save();
+        }
+
+        const updatedPrompt = await refreshPromptEngagementStats(id);
+        res.status(200).json({
+            _id: updatedPrompt._id,
+            upvotes: updatedPrompt.upvotes,
+            downvotes: updatedPrompt.downvotes,
+            commentCount: updatedPrompt.commentCount,
+            hotScore: updatedPrompt.hotScore,
+            score: updatedPrompt.upvotes - updatedPrompt.downvotes,
+            msg: 'Vote updated successfully.',
+        });
+    } catch (err) {
+        console.error('Error voting prompt:', err.message);
+        res.status(500).json({ error: 'Server error while voting prompt' });
+    }
+};
+
+const getPromptComments = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const comments = await Comment.find({ prompt: id, isDeleted: false })
+            .sort({ createdAt: -1 })
+            .populate('author', 'name avatar');
+
+        res.status(200).json({ comments });
+    } catch (err) {
+        console.error('Error fetching prompt comments:', err.message);
+        res.status(500).json({ error: 'Server error while fetching comments' });
+    }
+};
+
+const createPromptComment = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { body, parentCommentId = null } = req.body;
+
+        if (!body || !body.trim()) {
+            return res.status(400).json({ msg: 'Comment body is required.' });
+        }
+
+        const prompt = await Prompt.findById(id);
+        if (!prompt) {
+            return res.status(404).json({ msg: 'Prompt not found' });
+        }
+
+        if (parentCommentId) {
+            const parent = await Comment.findOne({ _id: parentCommentId, prompt: id });
+            if (!parent) {
+                return res.status(400).json({ msg: 'Parent comment not found for this prompt.' });
+            }
+        }
+
+        const comment = await Comment.create({
+            prompt: id,
+            author: req.user.id,
+            body: body.trim(),
+            parentComment: parentCommentId || null,
+        });
+
+        await refreshPromptEngagementStats(id);
+
+        const populatedComment = await Comment.findById(comment._id).populate('author', 'name avatar');
+        res.status(201).json({ comment: populatedComment });
+    } catch (err) {
+        console.error('Error creating prompt comment:', err.message);
+        res.status(500).json({ error: 'Server error while creating comment' });
+    }
+};
+
 
 // Export the controller functions to be used in route definitions
 module.exports = {
@@ -440,5 +568,8 @@ module.exports = {
     editPrompt,
     deletePrompt, // Export the new deletePrompt function
     ratePrompt,   // Export the implemented ratePrompt function
-    bookmarkPrompt // Export the placeholder bookmarkPrompt function
+    bookmarkPrompt, // Export the placeholder bookmarkPrompt function
+    votePrompt,
+    getPromptComments,
+    createPromptComment
 };

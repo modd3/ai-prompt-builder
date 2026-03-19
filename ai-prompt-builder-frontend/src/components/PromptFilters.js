@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
+const BACKEND_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+
 // Component for filtering and sorting prompts
 // Accepts handlers to communicate changes back to the parent (HomePage)
 const PromptFilters = ({ onFilterChange, onSortChange }) => {
@@ -20,15 +22,16 @@ const PromptFilters = ({ onFilterChange, onSortChange }) => {
         const fetchTags = async () => {
             try {
                 // Fetch unique tags from the backend API
-                const response = await fetch(process.env.REACT_APP_FRONTEND_API_URL + '/prompts/tags'); // Replace with your backend URL
+                const response = await fetch(`${BACKEND_BASE_URL}/api/prompts/tags`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch tags');
                 }
                 const data = await response.json();
-                setAvailableTags(['All', ...data]); // Add 'All' option and set available tags
+                const normalizedTags = Array.isArray(data) ? data : (data?.tags || []);
+                setAvailableTags(['All', ...normalizedTags]); // Add 'All' option and set available tags
             } catch (error) {
                 console.error('Error fetching tags:', error);
-                // Handle error (e.g., display a message)
+                setAvailableTags(['All']);
             }
         };
         fetchTags();
@@ -53,45 +56,40 @@ const PromptFilters = ({ onFilterChange, onSortChange }) => {
         if (value === 'Newest') {
             newSortBy = 'created_at';
             newSortOrder = 'desc';
-        } else if (value === 'Oldest') { // Added Oldest option
+        } else if (value === 'Oldest') {
              newSortBy = 'created_at';
              newSortOrder = 'asc';
         }
         else if (value === 'Highest Rated') {
             newSortBy = 'rating';
             newSortOrder = 'desc';
-        } else if (value === 'Most Popular') { // Assuming 'Popular' means 'views'
+        } else if (value === 'Most Popular') {
             newSortBy = 'views';
             newSortOrder = 'desc';
         }
-         // Add logic for title sorting if needed
 
         setSortBy(newSortBy);
         setSortOrder(newSortOrder);
-        // Call the parent component's handler with the new sort state
         if (onSortChange) {
             onSortChange(newSortBy, newSortOrder);
         }
     };
 
-    // Handler for tags input change (if using a text input for tags)
     const handleTagsInputChange = (e) => {
          const tagsString = e.target.value;
          setSelectedTags(tagsString);
-         // Call the parent component's handler with the new tags filter
          if (onFilterChange) {
              onFilterChange({ tags: tagsString });
          }
     };
 
 
-    // Helper function to determine model button classes
     const getModelButtonClass = (modelName) => {
         const baseClass = "px-3 py-1.5 rounded-full text-sm font-medium transition-all";
         if (selectedModel === modelName) {
              return `${baseClass} bg-primary-600 text-white hover:bg-primary-700`;
         } else {
-            return `${baseClass} bg-gray-100 text-gray-700 hover:bg-gray-200`;
+            return `${baseClass} bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-muted dark:text-muted-foreground dark:hover:bg-muted/80`;
         }
     };
 
@@ -108,38 +106,38 @@ const PromptFilters = ({ onFilterChange, onSortChange }) => {
                         {filter}
                     </button>
                 ))}
-                {/* TODO: Add a tags filter input or dropdown using 'availableTags' state */}
-                 {/* Example Tags Input: */}
-                 <input
+                <input
                      type="text"
+                     list="available-tags"
                      placeholder="Filter by tags (comma-separated)"
-                     className="px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 transition outline-none focus:ring-2 focus:ring-primary-500"
+                     className="px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 transition outline-none focus:ring-2 focus:ring-primary-500 dark:bg-muted dark:text-muted-foreground dark:hover:bg-muted/80"
                      value={selectedTags}
                      onChange={handleTagsInputChange}
-                 /> 
+                 />
+                 <datalist id="available-tags">
+                    {availableTags.filter((tag) => tag !== 'All').map((tag) => (
+                        <option key={tag} value={tag} />
+                    ))}
+                 </datalist>
             </div>
             {/* Sort Dropdown */}
             <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">Sort by:</span>
+                <span className="text-sm text-gray-500 dark:text-muted-foreground">Sort by:</span>
                 <select
-                    className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition"
+                    className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition bg-white dark:bg-card dark:border-border"
                     value={
-                         // Set the selected value based on sortBy and sortOrder
                          sortBy === 'created_at' && sortOrder === 'asc' ? 'Oldest' :
                          sortBy === 'created_at' && sortOrder === 'desc' ? 'Newest' :
                          sortBy === 'rating' ? 'Highest Rated' :
                          sortBy === 'views' ? 'Most Popular' :
-                         'Newest' // Default display value
+                         'Newest'
                     }
                     onChange={handleSortChange}
                 >
-                    <option value="Newest">Newest</option> {/* Corresponds to created_at desc */}
-                    <option value="Oldest">Oldest</option> {/* Corresponds to created_at asc */}
-                    <option value="Most Popular">Most Popular</option> {/* Corresponds to views desc */}
-                    <option value="Highest Rated">Highest Rated</option> {/* Corresponds to rating desc */}
-                    {/* Add options for title sorting if implemented */}
-                    {/* <option value="title_asc">Title (A-Z)</option> */}
-                    {/* <option value="title_desc">Title (Z-A)</option> */}
+                    <option value="Newest">Newest</option>
+                    <option value="Oldest">Oldest</option>
+                    <option value="Most Popular">Most Popular</option>
+                    <option value="Highest Rated">Highest Rated</option>
                 </select>
             </div>
         </div>
