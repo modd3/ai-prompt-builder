@@ -388,7 +388,6 @@ const HomePage = () => {
             setPrompts((prev) => applyVoteUpdate(prev));
             setMostViewedPrompts((prev) => applyVoteUpdate(prev));
             setTopRatedPrompts((prev) => applyVoteUpdate(prev));
-            setHotPrompts((prev) => applyVoteUpdate(prev));
             setUserPrompts((prev) => applyVoteUpdate(prev));
 
             return voteData;

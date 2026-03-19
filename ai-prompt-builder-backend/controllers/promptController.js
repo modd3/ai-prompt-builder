@@ -109,8 +109,6 @@ console.log(filter);
             sortOption = { rating: -1 }; // Sort by highest rating
         } else if (sort === 'views') {
              sortOption = { views: -1 }; // Sort by most viewed (trending)
-        } else if (sort === 'comments') {
-            sortOption = { commentCount: -1, created_at: -1 };
         } else if (sort === 'hot' || sort === 'trending') {
             sortOption = { hotScore: -1, created_at: -1 };
         }

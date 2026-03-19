@@ -63,9 +63,6 @@ const PromptFilters = ({ onFilterChange, onSortChange }) => {
         else if (value === 'Highest Rated') {
             newSortBy = 'rating';
             newSortOrder = 'desc';
-        } else if (value === 'Trending') {
-            newSortBy = 'hot';
-            newSortOrder = 'desc';
         } else if (value === 'Most Popular') {
             newSortBy = 'views';
             newSortOrder = 'desc';
@@ -142,11 +139,9 @@ const PromptFilters = ({ onFilterChange, onSortChange }) => {
                     }
                     onChange={handleSortChange}
                 >
-                    <option value="Trending">Trending</option>
                     <option value="Newest">Newest</option>
                     <option value="Oldest">Oldest</option>
                     <option value="Most Popular">Most Popular</option>
-                    <option value="Most Discussed">Most Discussed</option>
                     <option value="Highest Rated">Highest Rated</option>
                 </select>
             </div>
