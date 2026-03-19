@@ -60,6 +60,25 @@ const PromptSchema = new mongoose.Schema({
   views: {
     type: Number,
     default: 0, // Track how many times the prompt has been viewed
+  },
+  upvotes: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  downvotes: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  commentCount: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  hotScore: {
+    type: Number,
+    default: 0,
   }
   // Add fields for test results or references to test results if you store them separately
   // testResults: [{ type: mongoose.Schema.Types.ObjectId, ref: 'TestResult' }]
@@ -69,6 +88,7 @@ const PromptSchema = new mongoose.Schema({
 PromptSchema.index({ title: 'text', content: 'text', tags: 'text' });
 // Add an index on the author field for efficient fetching of user's prompts
 PromptSchema.index({ author: 1 });
+PromptSchema.index({ hotScore: -1, created_at: -1 });
 
 
 // Create the Mongoose model from the schema
