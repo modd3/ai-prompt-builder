@@ -12,7 +12,7 @@ import RegisterForm from '../components/RegisterForm';
 import { useAuth } from '../context/AuthContext';
 // Import the new ProfilePage component
 import ProfilePage from '../components/UserProfile'; // New Import
-
+import API from '../api'
 
 // Define the base URL for the backend API from environment variables.
 // It should be process.env.REACT_APP_BACKEND_URL, not FRONTEND_API_URL.
@@ -119,7 +119,7 @@ const HomePage = () => {
             try {
                 // Make the GET request to the backend API for the main list
                 // CORRECTED: Using BACKEND_BASE_URL
-                const response = await fetch(`${BACKEND_BASE_URL}/api/prompts?${queryParams.toString()}`);
+                const response = await fetch(`${BACKEND_BASE_URL}/prompts?${queryParams.toString()}`);
 
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -162,7 +162,7 @@ const HomePage = () => {
                 queryParams.append('limit', 6);
                 queryParams.append('isPublic', true);
                 try {
-                    const response = await fetch(`${BACKEND_BASE_URL}/api/prompts?${queryParams.toString()}`);
+                    const response = await fetch(`${BACKEND_BASE_URL}/prompts?${queryParams.toString()}`);
                     if (!response.ok) {
                         const errorData = await response.json();
                         throw new Error(errorData.error || 'Failed to fetch trending prompts');
@@ -185,7 +185,7 @@ const HomePage = () => {
                 queryParams.append('isPublic', true); // Only show public prompts
                 try {
                     // CORRECTED: Using BACKEND_BASE_URL
-                    const response = await fetch(`${BACKEND_BASE_URL}/api/prompts?${queryParams.toString()}`);
+                    const response = await fetch(`${BACKEND_BASE_URL}/prompts?${queryParams.toString()}`);
                     if (!response.ok) {
                          const errorData = await response.json();
                          throw new Error(errorData.error || 'Failed to fetch most viewed prompts');
@@ -210,7 +210,7 @@ const HomePage = () => {
                  // queryParams.append('ratingsCount', {$gt: 0}); // Requires backend support for this filter
                 try {
                     // CORRECTED: Using BACKEND_BASE_URL
-                    const response = await fetch(`${BACKEND_BASE_URL}/api/prompts?${queryParams.toString()}`);
+                    const response = await fetch(`${BACKEND_BASE_URL}/prompts?${queryParams.toString()}`);
                     if (!response.ok) {
                          const errorData = await response.json();
                          throw new Error(errorData.error || 'Failed to fetch top rated prompts');
@@ -255,11 +255,7 @@ const HomePage = () => {
             try {
                 // Fetch prompts created by the current user from the /api/prompts/mine endpoint
                 // CORRECTED: Using BACKEND_BASE_URL
-                const response = await fetch(`${BACKEND_BASE_URL}/api/prompts/mine`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}` // Send token for private prompts
-                    }
-                });
+                const response = await API.get("/prompts/mine");
 
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -294,15 +290,9 @@ const HomePage = () => {
 
          try {
              // CORRECTED: Using BACKEND_BASE_URL
-             const response = await fetch(`${BACKEND_BASE_URL}/api/prompts/${promptId}/rate`, {
-                 method: 'POST',
-                 headers: {
-                     'Content-Type': 'application/json',
-                     'Authorization': `Bearer ${token}`, // Include the JWT token
-                     // Removed 'Access-Control-Allow-Origin' as it's a response header, not a request header
-                 },
-                 body: JSON.stringify({ rating: ratingValue }), // Send the rating value
-             });
+             const response = await API.post(`${BACKEND_BASE_URL}/api/prompts/${promptId}/rate`,
+             JSON.stringify({ rating: ratingValue }), // Send the rating value
+             );
 
              if (!response.ok) {
                  const errorData = await response.json();
@@ -356,14 +346,8 @@ const HomePage = () => {
         }
 
         try {
-            const response = await fetch(`${BACKEND_BASE_URL}/api/prompts/${promptId}/vote`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify({ value }),
-            });
+            const response = await API.post(`${BACKEND_BASE_URL}/prompts/${promptId}/vote`, JSON.stringify({ value }),
+            );
 
             if (!response.ok) {
                 const errorData = await response.json();
@@ -482,8 +466,8 @@ const HomePage = () => {
          setPromptToTest(null); // Clear any prompt loaded for testing
          setPromptToEdit(null); // Clear any prompt loaded for editing
          // Optionally clear search term or filters when going back home from other sections
-         // setSearchTerm('');
-         // setFilters({ targetModel: 'All', tags: '', isPublic: true });
+         setSearchTerm('');
+         setFilters({ targetModel: 'All', tags: '', isPublic: true });
 
          // TODO: The "Explore Prompts" button should render random prompts with pagination of 10 prompt cards.
          // This will require updating the fetchPrompts logic or creating a new fetch function

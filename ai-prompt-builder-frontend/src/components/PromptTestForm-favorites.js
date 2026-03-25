@@ -3,6 +3,7 @@ import TestResultsDisplay from './TestResultsDisplay';
 import ModelCard from './ModelCard';
 import { useAuth } from '../context/AuthContext';
 import { getModelById, getFreeModels } from '../config/models';
+import API from '../api/api';
 
 // Component for the "Test Your Prompts" section
 const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => {
@@ -162,13 +163,7 @@ const PromptTestForm = ({ initialPrompt = null, onBack, onEdit }) => {
     };
 
     try {
-      const response = await fetch(process.env.REACT_APP_FRONTEND_API_URL + "api/test-prompt", {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(testData),
-      });
+      const response = await API.post("/test-prompts", testData);
 
       if (!response.ok) {
         const errorData = await response.json();

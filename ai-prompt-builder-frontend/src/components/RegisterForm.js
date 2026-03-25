@@ -29,7 +29,7 @@ const RegisterForm = ({ onRegisterSuccess }) => {
     setMessage('');
 
     try {
-      const response = await fetch(process.env.REACT_APP_FRONTEND_API_URL + '/auth/register', {
+      const response = await fetch(process.env.REACT_APP_BACKEND_URL + '/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password })

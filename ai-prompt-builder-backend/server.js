@@ -6,6 +6,7 @@ const promptRoutes = require('./routes/prompts'); // Import prompt routes
 const testRoutes = require('./routes/test'); // Import test routes
 const authRoutes = require('./routes/auth'); // Import auth routes
 const cors = require('cors'); // Import CORS middleware to allow cross-origin requests
+const rateLimit = require('express-rate-limit'); // Rate limiting for security
 
 // Load environment variables from .env file
 // Try multiple paths to support both local and Docker environments
@@ -27,8 +28,8 @@ for (const envPath of envPaths) {
 
 const app = express(); // Create an Express application instance
 
-// Connect Database - This function needs to be called
-
+// Connect Database
+connectDB();
 
 // Init Middleware
 // express.json() parses incoming requests with JSON payloads
@@ -50,6 +51,32 @@ app.use(cors({
   },
   credentials: true, // Allow cookies and credentials
 }));
+
+// Rate limiting configuration
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: {
+    msg: 'Too many requests from this IP, please try again after 15 minutes'
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+// Stricter limiter for auth routes (prevent brute force)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // Limit each IP to 20 auth requests per windowMs
+  message: {
+    msg: 'Too many authentication attempts, please try again after 15 minutes'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply rate limiting to API routes
+app.use('/api/', apiLimiter);
+app.use('/api/auth', authLimiter);
 
 // Define API Routes
 // Use the imported route handlers for specific URL paths

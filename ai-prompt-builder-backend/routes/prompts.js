@@ -8,9 +8,10 @@ const {
     getUserPrompts,
     getPromptTags,
     editPrompt,
-    deletePrompt, // Placeholder for delete controller
-    ratePrompt,   // Placeholder for rate controller
-    bookmarkPrompt, // Placeholder for bookmark controller
+    deletePrompt,
+    ratePrompt,
+    bookmarkPrompt,
+    getBookmarkedPrompts,
     votePrompt,
     getPromptComments,
     createPromptComment
@@ -40,6 +41,11 @@ router.get('/tags', getPromptTags);
 // @desc    Get this user's prompts
 // @access  private
 router.get('/mine', authMiddleware, getUserPrompts);
+
+// @route   GET /api/prompts/bookmarks
+// @desc    Get user's bookmarked prompts
+// @access  Private
+router.get('/bookmarks', authMiddleware, getBookmarkedPrompts);
 
 // @route   GET /api/prompts/:id
 // @desc    Get a single prompt by ID

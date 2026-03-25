@@ -450,13 +450,83 @@ const ratePrompt = async (req, res) => {
     }
 };
 
-// Placeholder controller function for bookmarking a prompt
-// This function needs to be implemented to handle the POST /api/prompts/:id/bookmark route
+// Controller function for bookmarking/unbookmarking a prompt
 // Requires authentication (authMiddleware)
 const bookmarkPrompt = async (req, res) => {
-    // TODO: Implement logic to add/remove the prompt ID to the authenticated user's bookmarks list
-    // You might need to update the User model to have a bookmarks array
-    res.status(501).json({ msg: 'Bookmark prompt functionality not yet implemented' }); // 501 Not Implemented
+    try {
+        const { id } = req.params; // Prompt ID from URL
+        const userId = req.user.id; // Authenticated user ID from authMiddleware
+
+        // Find the prompt
+        const prompt = await Prompt.findById(id);
+        if (!prompt) {
+            return res.status(404).json({ msg: 'Prompt not found' });
+        }
+
+        // Find the user
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        // Check if prompt is already bookmarked
+        const bookmarkIndex = user.bookmarks.indexOf(id);
+        
+        if (bookmarkIndex === -1) {
+            // Add bookmark
+            user.bookmarks.push(id);
+            await user.save();
+            res.status(200).json({ 
+                msg: 'Prompt bookmarked successfully',
+                bookmarked: true,
+                bookmarksCount: user.bookmarks.length
+            });
+        } else {
+            // Remove bookmark
+            user.bookmarks.splice(bookmarkIndex, 1);
+            await user.save();
+            res.status(200).json({ 
+                msg: 'Prompt removed from bookmarks',
+                bookmarked: false,
+                bookmarksCount: user.bookmarks.length
+            });
+        }
+
+    } catch (err) {
+        console.error('Error bookmarking prompt:', err.message);
+        if (err.kind === 'ObjectId') {
+            return res.status(404).json({ error: 'Prompt not found' });
+        }
+        res.status(500).json({ error: 'Server error while bookmarking prompt' });
+    }
+};
+
+// Controller function to get user's bookmarked prompts
+const getBookmarkedPrompts = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        
+        const user = await User.findById(userId).populate({
+            path: 'bookmarks',
+            populate: {
+                path: 'author',
+                select: 'name avatar'
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        res.status(200).json({
+            bookmarks: user.bookmarks,
+            count: user.bookmarks.length
+        });
+
+    } catch (err) {
+        console.error('Error fetching bookmarked prompts:', err.message);
+        res.status(500).json({ error: 'Server error while fetching bookmarks' });
+    }
 };
 
 const votePrompt = async (req, res) => {

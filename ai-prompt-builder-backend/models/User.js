@@ -30,6 +30,7 @@ const UserSchema = new mongoose.Schema({
   avatar: { type: String }, // URL to user's avatar
   bio: { type: String },
   prompts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Prompt' }], // Optional: Array of prompts created by this user
+  bookmarks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Prompt' }], // Array of bookmarked prompts
   role: { type: String, enum: ['user', 'admin'], default: 'user' }, // Role of the user (user/admin)
 });
 

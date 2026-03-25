@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { registerUser, loginUser, getMe } = require('../controllers/authController'); // Import controller functions
+const { registerUser, loginUser, getMe, refreshToken } = require('../controllers/authController'); // Import controller functions
 const authMiddleware = require('../middleware/auth'); // Import auth middleware
 
 // @route   POST /api/auth/register
@@ -12,6 +12,11 @@ router.post('/register', registerUser);
 // @desc    Authenticate user and get token
 // @access  Public
 router.post('/login', loginUser);
+
+// @route   POST /api/auth/refresh
+// @desc    Refresh access token
+// @access  Public (requires valid token in body)
+router.post('/refresh', refreshToken);
 
 // @route   GET /api/auth/me
 // @desc    Get logged in user data

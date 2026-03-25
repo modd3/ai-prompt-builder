@@ -7,7 +7,7 @@ const generateToken = (id) => {
   // Sign the token with the user's ID and your JWT secret from environment variables
   // Ensure JWT_SECRET is set in your .env file
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30d', // Token expires in 30 days (adjust as needed)
+    expiresIn: '7d', // Token expires in 30 days (adjust as needed)
   });
 };
 
@@ -101,9 +101,52 @@ const getMe = async (req, res) => {
     });
 };
 
+// @desc    Refresh access token
+// @route   POST /api/auth/refresh
+// @access  Public (requires valid token)
+const refreshToken = async (req, res) => {
+  const { token } = req.body;
+
+  if (!token) {
+    return res.status(400).json({ msg: 'Token is required' });
+  }
+
+  try {
+    // Verify the existing token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Check if user still exists
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) {
+      return res.status(401).json({ msg: 'User not found' });
+    }
+
+    // Generate new token
+    const newToken = generateToken(user._id);
+
+    res.json({
+      token: newToken,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email
+      }
+    });
+  } catch (err) {
+    console.error('Token refresh error:', err.message);
+    
+    if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({ msg: 'Token expired, please login again' });
+    }
+    
+    res.status(401).json({ msg: 'Invalid token' });
+  }
+};
+
 
 module.exports = {
   registerUser,
   loginUser,
   getMe,
+  refreshToken,
 };
